@@ -1,0 +1,28 @@
+import { describe, it, expect, beforeEach } from "vitest";
+import { getDb } from "./db";
+import fs from "node:fs";
+
+const TEST_DB = "data/test.db";
+
+describe("getDb", () => {
+  beforeEach(() => {
+    if (fs.existsSync(TEST_DB)) fs.unlinkSync(TEST_DB);
+  });
+
+  it("creates schema on first call", () => {
+    const db = getDb(TEST_DB);
+    const tables = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table'")
+      .all()
+      .map((r: any) => r.name);
+    expect(tables).toContain("users");
+    expect(tables).toContain("problems");
+    expect(tables).toContain("attempts");
+    db.close();
+  });
+
+  it("is idempotent", () => {
+    getDb(TEST_DB).close();
+    expect(() => getDb(TEST_DB).close()).not.toThrow();
+  });
+});
