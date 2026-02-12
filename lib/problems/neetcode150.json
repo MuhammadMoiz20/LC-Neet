@@ -1,0 +1,47 @@
+[
+  {
+    "id": 1,
+    "slug": "two-sum",
+    "title": "Two Sum",
+    "difficulty": "Easy",
+    "topic": "Arrays & Hashing",
+    "neetcode_video_url": "https://www.youtube.com/watch?v=KLlXCFG5TnA",
+    "description_md": "Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`.",
+    "starter_code": "class Solution:\n    def twoSum(self, nums: list[int], target: int) -> list[int]:\n        pass\n",
+    "test_cases": [
+      { "input": { "nums": [2,7,11,15], "target": 9 }, "expected": [0,1] },
+      { "input": { "nums": [3,2,4], "target": 6 }, "expected": [1,2] }
+    ],
+    "editorial_md": null
+  },
+  {
+    "id": 2,
+    "slug": "valid-anagram",
+    "title": "Valid Anagram",
+    "difficulty": "Easy",
+    "topic": "Arrays & Hashing",
+    "neetcode_video_url": "https://www.youtube.com/watch?v=9UtInBqnCgA",
+    "description_md": "Given two strings `s` and `t`, return `true` if `t` is an anagram of `s`.",
+    "starter_code": "class Solution:\n    def isAnagram(self, s: str, t: str) -> bool:\n        pass\n",
+    "test_cases": [
+      { "input": { "s": "anagram", "t": "nagaram" }, "expected": true },
+      { "input": { "s": "rat", "t": "car" }, "expected": false }
+    ],
+    "editorial_md": null
+  },
+  {
+    "id": 3,
+    "slug": "contains-duplicate",
+    "title": "Contains Duplicate",
+    "difficulty": "Easy",
+    "topic": "Arrays & Hashing",
+    "neetcode_video_url": "https://www.youtube.com/watch?v=3OamzN90kPg",
+    "description_md": "Given an integer array `nums`, return `true` if any value appears at least twice.",
+    "starter_code": "class Solution:\n    def containsDuplicate(self, nums: list[int]) -> bool:\n        pass\n",
+    "test_cases": [
+      { "input": { "nums": [1,2,3,1] }, "expected": true },
+      { "input": { "nums": [1,2,3,4] }, "expected": false }
+    ],
+    "editorial_md": null
+  }
+]
