@@ -38,7 +38,7 @@ let cached: Database.Database | null = null;
 let cachedPath: string | null = null;
 
 export function getDb(filePath = "data/app.db"): Database.Database {
-  if (cached && cachedPath === filePath) return cached;
+  if (cached && cachedPath === filePath && cached.open) return cached;
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   const db = new Database(filePath);
   db.pragma("journal_mode = WAL");
@@ -47,4 +47,16 @@ export function getDb(filePath = "data/app.db"): Database.Database {
   cached = db;
   cachedPath = filePath;
   return db;
+}
+
+export function __resetDbCache(): void {
+  if (cached && cached.open) {
+    try {
+      cached.close();
+    } catch {
+      // ignore
+    }
+  }
+  cached = null;
+  cachedPath = null;
 }
