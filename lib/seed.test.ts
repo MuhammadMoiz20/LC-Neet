@@ -14,7 +14,7 @@ describe("seedProblems", () => {
   it("inserts all problems", () => {
     const db = getDb(TEST_DB);
     seedProblems(db);
-    const count = (db.prepare("SELECT COUNT(*) as c FROM problems").get() as any).c;
+    const count = (db.prepare("SELECT COUNT(*) as c FROM problems").get() as { c: number }).c;
     expect(count).toBe(3);
     db.close();
   });
@@ -23,7 +23,7 @@ describe("seedProblems", () => {
     const db = getDb(TEST_DB);
     seedProblems(db);
     seedProblems(db);
-    const count = (db.prepare("SELECT COUNT(*) as c FROM problems").get() as any).c;
+    const count = (db.prepare("SELECT COUNT(*) as c FROM problems").get() as { c: number }).c;
     expect(count).toBe(3);
     db.close();
   });

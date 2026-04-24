@@ -14,7 +14,7 @@ describe("getDb", () => {
     const tables = db
       .prepare("SELECT name FROM sqlite_master WHERE type='table'")
       .all()
-      .map((r: any) => r.name);
+      .map((r) => (r as { name: string }).name);
     expect(tables).toContain("users");
     expect(tables).toContain("problems");
     expect(tables).toContain("attempts");
