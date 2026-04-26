@@ -5,11 +5,19 @@ import { CodeEditor } from "@/components/code-editor";
 import { usePyodideRunner } from "@/lib/pyodide/use-pyodide-runner";
 import type { RunResult } from "@/lib/pyodide/worker-protocol";
 import { submitAttempt } from "./actions";
+import { CoachPanel } from "@/components/coach-panel";
 
 export function ProblemWorkspace({ problem }: { problem: Problem }) {
   const [code, setCode] = useState(problem.starter_code);
   const [result, setResult] = useState<RunResult | null>(null);
   const { status, run, errorMsg } = usePyodideRunner();
+  const [coachOpen, setCoachOpen] = useState(false);
+  const lastRunOutput = result
+    ? result.compile_error ??
+      result.results
+        .map((c, i) => `Case ${i + 1}: ${c.passed ? "PASS" : "FAIL"} ${c.error ?? ""}`)
+        .join("\n")
+    : null;
 
   async function onRun() {
     const r = await run(
@@ -36,9 +44,17 @@ export function ProblemWorkspace({ problem }: { problem: Problem }) {
   return (
     <main className="grid grid-cols-2 gap-4 h-screen p-4">
       <section className="overflow-auto pr-4 border-r border-zinc-800">
-        <h1 className="text-2xl font-semibold mb-2">
-          {problem.id}. {problem.title}
-        </h1>
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <h1 className="text-2xl font-semibold">
+            {problem.id}. {problem.title}
+          </h1>
+          <button
+            onClick={() => setCoachOpen((v) => !v)}
+            className="text-sm px-3 py-1 rounded border border-zinc-800 hover:bg-zinc-900 shrink-0"
+          >
+            {coachOpen ? "Hide coach" : "Coach"}
+          </button>
+        </div>
         <p className="text-xs uppercase tracking-wide text-zinc-500 mb-4">
           {problem.difficulty} · {problem.topic}
         </p>
@@ -66,6 +82,13 @@ export function ProblemWorkspace({ problem }: { problem: Problem }) {
         </div>
         <ResultsPanel result={result} />
       </section>
+      <CoachPanel
+        problemId={problem.id}
+        code={code}
+        lastRunOutput={lastRunOutput}
+        open={coachOpen}
+        onClose={() => setCoachOpen(false)}
+      />
     </main>
   );
 }
