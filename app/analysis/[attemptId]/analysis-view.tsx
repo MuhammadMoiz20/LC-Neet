@@ -50,7 +50,7 @@ export function AnalysisView({
             {status === "pending" ? (
               <p className="text-sm text-zinc-500 italic">Analysis in progress…</p>
             ) : (
-              <div className="text-sm whitespace-pre-wrap">
+              <div className="text-sm space-y-2">
                 <ReactMarkdown>{row?.content_md ?? ""}</ReactMarkdown>
               </div>
             )}
