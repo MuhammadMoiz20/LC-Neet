@@ -127,7 +127,9 @@ export function deriveStarter(pythonSnippet: string): { starter: string; methodN
 }
 
 type LCParam = { name: string; type?: string };
-type LCMeta = { name: string; params: LCParam[] };
+// Standard problems carry { name, params }; design problems carry
+// { classname, methods, ... } and have no top-level params.
+type LCMeta = { name?: string; params?: LCParam[]; classname?: string };
 type LCFetchResult = { content: string; metaData: LCMeta; python3: string };
 
 const LC_QUERY = `query questionData($titleSlug: String!) {
@@ -237,7 +239,10 @@ export async function main(): Promise<void> {
       const r = await fetchLC(row.slug);
       const description_md = htmlToMarkdown(r.content);
       const { starter, methodName } = deriveStarter(r.python3);
-      const paramNames = r.metaData.params.map((p) => p.name);
+      const paramNames = r.metaData.params?.map((p) => p.name) ?? [];
+      if (paramNames.length === 0 && !r.metaData.classname) {
+        failures.push({ slug: row.slug, reason: "no params in metaData" });
+      }
       const cases = parseExamples(description_md, paramNames);
       let test_cases: TestCase[] = cases;
       if (cases.length === 0) {
@@ -268,6 +273,22 @@ export async function main(): Promise<void> {
           difficulty: row.difficulty,
           topic: row.topic,
           neetcode_video_url: row.neetcode_video_url,
+        });
+      } else {
+        // Emit a placeholder so the file always has all 150 rows.
+        // Manual edit pass (Task 9) fills these in — typically LC Premium.
+        out.push({
+          id: row.id,
+          slug: row.slug,
+          title: row.title,
+          difficulty: row.difficulty,
+          topic: row.topic,
+          neetcode_video_url: row.neetcode_video_url,
+          description_md: `> _Description pending manual entry (importer error: ${reason})._`,
+          starter_code: "class Solution:\n    def solve(self):\n        pass\n",
+          test_cases: [{ input: {}, expected: null }],
+          editorial_md: null,
+          method_name: "solve",
         });
       }
     }
