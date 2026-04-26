@@ -1,7 +1,12 @@
 "use server";
 import { auth } from "@/auth";
 import { getDb } from "@/lib/db";
-import { recordAttempt, listAttempts, type AttemptStatus } from "@/lib/attempts/repo";
+import {
+  recordAttempt,
+  listAttempts,
+  type Attempt,
+  type AttemptStatus,
+} from "@/lib/attempts/repo";
 import { upsertReview, getReviewState } from "@/lib/sr/repo";
 import { nextReview, gradeFromAttempt } from "@/lib/sr/sm2";
 import { listMessages } from "@/lib/chat/repo";
@@ -58,4 +63,11 @@ export async function submitAttempt(input: {
   }
 
   return attemptId;
+}
+
+export async function getMyAttempts(problemId: number): Promise<Attempt[]> {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  const userId = Number(session.user.id);
+  return listAttempts(getDb(), userId, problemId);
 }

@@ -1,11 +1,17 @@
 "use client";
 import { Icon, type IconName } from "@/components/ui";
 
-export type WorkspaceTabId = "sol" | "tests" | "notes" | "scratch";
+export type WorkspaceTabId =
+  | "sol"
+  | "tests"
+  | "submissions"
+  | "notes"
+  | "scratch";
 
 const TABS: { id: WorkspaceTabId; name: string; icon: IconName }[] = [
   { id: "sol", name: "Solution", icon: "list" },
   { id: "tests", name: "Tests", icon: "beaker" },
+  { id: "submissions", name: "Submissions", icon: "history" },
   { id: "notes", name: "Notes", icon: "note" },
   { id: "scratch", name: "Scratch", icon: "scratch" },
 ];
