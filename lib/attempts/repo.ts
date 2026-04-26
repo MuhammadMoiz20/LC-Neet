@@ -48,6 +48,31 @@ export type AttemptSummary = {
   runtime_ms: number | null;
 };
 
+export type LastInterviewAttempt = {
+  slug: string;
+  title: string;
+  status: AttemptStatus;
+  createdAt: number;
+};
+
+export function getLastInterviewAttempt(
+  db: Database.Database,
+  userId: number,
+): LastInterviewAttempt | null {
+  const row = db
+    .prepare(
+      `SELECT a.status as status, a.created_at as createdAt,
+              p.slug as slug, p.title as title
+       FROM attempts a
+       JOIN problems p ON p.id = a.problem_id
+       WHERE a.user_id = ? AND a.mode = 'interview'
+       ORDER BY a.created_at DESC
+       LIMIT 1`,
+    )
+    .get(userId) as LastInterviewAttempt | undefined;
+  return row ?? null;
+}
+
 export function listAttemptsByProblem(
   db: Database.Database,
   userId: number,
