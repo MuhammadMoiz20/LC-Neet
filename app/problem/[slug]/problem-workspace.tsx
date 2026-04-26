@@ -12,6 +12,7 @@ export function ProblemWorkspace({ problem }: { problem: Problem }) {
   const [result, setResult] = useState<RunResult | null>(null);
   const { status, run, errorMsg } = usePyodideRunner();
   const [coachOpen, setCoachOpen] = useState(false);
+  const [analysisAttemptId, setAnalysisAttemptId] = useState<number | null>(null);
   const lastRunOutput = result
     ? result.compile_error ??
       result.results
@@ -20,6 +21,7 @@ export function ProblemWorkspace({ problem }: { problem: Problem }) {
     : null;
 
   async function onRun() {
+    setAnalysisAttemptId(null);
     const r = await run(
       code,
       JSON.stringify(problem.test_cases),
@@ -28,7 +30,7 @@ export function ProblemWorkspace({ problem }: { problem: Problem }) {
     setResult(r);
     const allPassed = r.compile_error === null && r.results.every((c) => c.passed);
     const totalMs = r.results.reduce((s, c) => s + c.elapsed_ms, 0);
-    await submitAttempt({
+    const attemptId = await submitAttempt({
       problemId: problem.id,
       code,
       status: r.compile_error
@@ -39,6 +41,10 @@ export function ProblemWorkspace({ problem }: { problem: Problem }) {
       runtimeMs: totalMs,
       mode: "run",
     });
+    if (allPassed) {
+      fetch(`/api/analysis/${attemptId}`, { method: "POST" }).catch(() => {});
+      setAnalysisAttemptId(attemptId);
+    }
   }
 
   return (
@@ -80,6 +86,14 @@ export function ProblemWorkspace({ problem }: { problem: Problem }) {
           </button>
           {errorMsg && <span className="text-red-500 text-sm">{errorMsg}</span>}
         </div>
+        {analysisAttemptId && (
+          <a
+            href={`/analysis/${analysisAttemptId}`}
+            className="text-sm text-emerald-400 hover:underline"
+          >
+            Analysis ready → /analysis/{analysisAttemptId}
+          </a>
+        )}
         <ResultsPanel result={result} />
       </section>
       <CoachPanel
