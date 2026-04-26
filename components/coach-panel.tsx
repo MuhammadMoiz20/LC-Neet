@@ -21,14 +21,23 @@ export function CoachPanel({
   const [mode, setMode] = useState<Mode>("hints");
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
+  const sentRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
+    let cancelled = false;
+    sentRef.current = false;
     fetch(`/api/coach?problemId=${problemId}`)
       .then((r) => r.json())
-      .then((d) => setMessages(d.messages ?? []))
+      .then((d) => {
+        if (cancelled || sentRef.current) return;
+        setMessages(d.messages ?? []);
+      })
       .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, [open, problemId]);
 
   useEffect(() => {
@@ -38,6 +47,7 @@ export function CoachPanel({
   async function send() {
     const text = input.trim();
     if (!text || streaming) return;
+    sentRef.current = true;
     setInput("");
     setMessages((m) => [...m, { role: "user", content: text, mode }]);
     setMessages((m) => [...m, { role: "assistant", content: "", mode }]);
