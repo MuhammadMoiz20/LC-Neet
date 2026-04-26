@@ -43,6 +43,32 @@ CREATE TABLE IF NOT EXISTS chat_messages (
   created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
 );
 CREATE INDEX IF NOT EXISTS chat_user_problem ON chat_messages(user_id, problem_id, created_at);
+CREATE TABLE IF NOT EXISTS analyses (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  attempt_id INTEGER NOT NULL REFERENCES attempts(id),
+  kind TEXT NOT NULL CHECK(kind IN ('quality','complexity','comparison','pattern','mistake')),
+  content_md TEXT NOT NULL,
+  status TEXT NOT NULL CHECK(status IN ('pending','done','error')),
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+  UNIQUE(attempt_id, kind)
+);
+CREATE INDEX IF NOT EXISTS analyses_attempt ON analyses(attempt_id);
+CREATE TABLE IF NOT EXISTS mistakes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  problem_id INTEGER NOT NULL REFERENCES problems(id),
+  attempt_id INTEGER NOT NULL REFERENCES attempts(id),
+  category TEXT NOT NULL,
+  note TEXT NOT NULL,
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
+);
+CREATE INDEX IF NOT EXISTS mistakes_user_problem ON mistakes(user_id, problem_id);
+CREATE TABLE IF NOT EXISTS pattern_counters (
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  pattern TEXT NOT NULL,
+  solved_count INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (user_id, pattern)
+);
 `;
 
 let cached: Database.Database | null = null;
