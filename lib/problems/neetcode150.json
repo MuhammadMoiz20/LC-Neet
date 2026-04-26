@@ -1028,7 +1028,7 @@
     "topic": "Stack",
     "neetcode_video_url": "https://www.youtube.com/watch?v=qkLl7nAwDPo",
     "description_md": "Design a stack that supports push, pop, top, and retrieving the minimum element in constant time.\n\nImplement the `MinStack` class:\n\n*   `MinStack()` initializes the stack object.\n*   `void push(int val)` pushes the element `val` onto the stack.\n*   `void pop()` removes the element on the top of the stack.\n*   `int top()` gets the top element of the stack.\n*   `int getMin()` retrieves the minimum element in the stack.\n\nYou must implement a solution with `O(1)` time complexity for each function.\n\n**Example 1:**\n\n```\nInput\n[\"MinStack\",\"push\",\"push\",\"push\",\"getMin\",\"pop\",\"top\",\"getMin\"]\n[[],[-2],[0],[-3],[],[],[],[]]\n\nOutput\n[null,null,null,null,-3,null,0,-2]\n\nExplanation\nMinStack minStack = new MinStack();\nminStack.push(-2);\nminStack.push(0);\nminStack.push(-3);\nminStack.getMin(); // return -3\nminStack.pop();\nminStack.top();    // return 0\nminStack.getMin(); // return -2\n```\n\n**Constraints:**\n\n*   `-231 <= val <= 231 - 1`\n*   Methods `pop`, `top` and `getMin` operations will always be called on **non-empty** stacks.\n*   At most `3 * 104` calls will be made to `push`, `pop`, `top`, and `getMin`.",
-    "starter_code": "class Solution:\n    def __init__(self):\n        pass\n",
+    "starter_code": "class MinStack:\n\n    def __init__(self):\n        \n\n    def push(self, val: int) -> None:\n        \n\n    def pop(self) -> None:\n        \n\n    def top(self) -> int:\n        \n\n    def getMin(self) -> int:\n        \n\n\n# obj = MinStack()\n# obj.push(val)\n# obj.pop()\n",
     "test_cases": [
       {
         "input": {},
@@ -1544,7 +1544,7 @@
     "topic": "Binary Search",
     "neetcode_video_url": "https://www.youtube.com/watch?v=fu2cD_6E8Hw",
     "description_md": "Design a time-based key-value data structure that can store multiple values for the same key at different time stamps and retrieve the key's value at a certain timestamp.\n\nImplement the `TimeMap` class:\n\n*   `TimeMap()` Initializes the object of the data structure.\n*   `void set(String key, String value, int timestamp)` Stores the key `key` with the value `value` at the given time `timestamp`.\n*   `String get(String key, int timestamp)` Returns a value such that `set` was called previously, with `timestamp_prev <= timestamp`. If there are multiple such values, it returns the value associated with the largest `timestamp_prev`. If there are no values, it returns `\"\"`.\n\n**Example 1:**\n\n```\nInput\n[\"TimeMap\", \"set\", \"get\", \"get\", \"set\", \"get\", \"get\"]\n[[], [\"foo\", \"bar\", 1], [\"foo\", 1], [\"foo\", 3], [\"foo\", \"bar2\", 4], [\"foo\", 4], [\"foo\", 5]]\nOutput\n[null, null, \"bar\", \"bar\", null, \"bar2\", \"bar2\"]\n\nExplanation\nTimeMap timeMap = new TimeMap();\ntimeMap.set(\"foo\", \"bar\", 1);  // store the key \"foo\" and value \"bar\" along with timestamp = 1.\ntimeMap.get(\"foo\", 1);         // return \"bar\"\ntimeMap.get(\"foo\", 3);         // return \"bar\", since there is no value corresponding to foo at timestamp 3 and timestamp 2, then the only value is at timestamp 1 is \"bar\".\ntimeMap.set(\"foo\", \"bar2\", 4); // store the key \"foo\" and value \"bar2\" along with timestamp = 4.\ntimeMap.get(\"foo\", 4);         // return \"bar2\"\ntimeMap.get(\"foo\", 5);         // return \"bar2\"\n```\n\n**Constraints:**\n\n*   `1 <= key.length, value.length <= 100`\n*   `key` and `value` consist of lowercase English letters and digits.\n*   `1 <= timestamp <= 107`\n*   All the timestamps `timestamp` of `set` are strictly increasing.\n*   At most `2 * 105` calls will be made to `set` and `get`.",
-    "starter_code": "class Solution:\n    def __init__(self):\n        pass\n",
+    "starter_code": "class TimeMap:\n\n    def __init__(self):\n        \n\n    def set(self, key: str, value: str, timestamp: int) -> None:\n        \n\n    def get(self, key: str, timestamp: int) -> str:\n        \n\n\n# obj = TimeMap()\n# obj.set(key,value,timestamp)\n",
     "test_cases": [
       {
         "input": {},
@@ -1601,7 +1601,7 @@
     "topic": "Linked List",
     "neetcode_video_url": "https://www.youtube.com/watch?v=G0_I-ZF0S38",
     "description_md": "Given the `head` of a singly linked list, reverse the list, and return *the reversed list*.\n\n**Example 1:**\n\n![](https://assets.leetcode.com/uploads/2021/02/19/rev1ex1.jpg)\n\n```\nInput: head = [1,2,3,4,5]\nOutput: [5,4,3,2,1]\n```\n\n**Example 2:**\n\n![](https://assets.leetcode.com/uploads/2021/02/19/rev1ex2.jpg)\n\n```\nInput: head = [1,2]\nOutput: [2,1]\n```\n\n**Example 3:**\n\n```\nInput: head = []\nOutput: []\n```\n\n**Constraints:**\n\n*   The number of nodes in the list is the range `[0, 5000]`.\n*   `-5000 <= Node.val <= 5000`\n\n**Follow up:** A linked list can be reversed either iteratively or recursively. Could you implement both?",
-    "starter_code": "class Solution:\n    def __init__(self, val=0, next=None):\n        pass\n",
+    "starter_code": "class Solution:\n    def reverseList(self, head: Optional[ListNode]) -> Optional[ListNode]:\n        pass\n",
     "test_cases": [
       {
         "input": {
@@ -1641,7 +1641,7 @@
       }
     ],
     "editorial_md": null,
-    "method_name": "__init__"
+    "method_name": "reverseList"
   },
   {
     "id": 36,
@@ -1651,7 +1651,7 @@
     "topic": "Linked List",
     "neetcode_video_url": "https://www.youtube.com/watch?v=XIdigk956u0",
     "description_md": "You are given the heads of two sorted linked lists `list1` and `list2`.\n\nMerge the two lists into one **sorted** list. The list should be made by splicing together the nodes of the first two lists.\n\nReturn *the head of the merged linked list*.\n\n**Example 1:**\n\n![](https://assets.leetcode.com/uploads/2020/10/03/merge_ex1.jpg)\n\n```\nInput: list1 = [1,2,4], list2 = [1,3,4]\nOutput: [1,1,2,3,4,4]\n```\n\n**Example 2:**\n\n```\nInput: list1 = [], list2 = []\nOutput: []\n```\n\n**Example 3:**\n\n```\nInput: list1 = [], list2 = [0]\nOutput: [0]\n```\n\n**Constraints:**\n\n*   The number of nodes in both lists is in the range `[0, 50]`.\n*   `-100 <= Node.val <= 100`\n*   Both `list1` and `list2` are sorted in **non-decreasing** order.",
-    "starter_code": "class Solution:\n    def __init__(self, val=0, next=None):\n        pass\n",
+    "starter_code": "class Solution:\n    def mergeTwoLists(self, list1: Optional[ListNode], list2: Optional[ListNode]) -> Optional[ListNode]:\n        pass\n",
     "test_cases": [
       {
         "input": {
@@ -1695,7 +1695,7 @@
       }
     ],
     "editorial_md": null,
-    "method_name": "__init__"
+    "method_name": "mergeTwoLists"
   },
   {
     "id": 37,
@@ -1705,7 +1705,7 @@
     "topic": "Linked List",
     "neetcode_video_url": "https://www.youtube.com/watch?v=S5bfdUTrKLM",
     "description_md": "You are given the head of a singly linked-list. The list can be represented as:\n\n```\nL0 → L1 → … → Ln - 1 → Ln\n```\n\n*Reorder the list to be on the following form:*\n\n```\nL0 → Ln → L1 → Ln - 1 → L2 → Ln - 2 → …\n```\n\nYou may not modify the values in the list's nodes. Only nodes themselves may be changed.\n\n**Example 1:**\n\n![](https://assets.leetcode.com/uploads/2021/03/04/reorder1linked-list.jpg)\n\n```\nInput: head = [1,2,3,4]\nOutput: [1,4,2,3]\n```\n\n**Example 2:**\n\n![](https://assets.leetcode.com/uploads/2021/03/09/reorder2-linked-list.jpg)\n\n```\nInput: head = [1,2,3,4,5]\nOutput: [1,5,2,4,3]\n```\n\n**Constraints:**\n\n*   The number of nodes in the list is in the range `[1, 5 * 104]`.\n*   `1 <= Node.val <= 1000`",
-    "starter_code": "class Solution:\n    def __init__(self, val=0, next=None):\n        pass\n",
+    "starter_code": "class Solution:\n    def reorderList(self, head: Optional[ListNode]) -> None:\n        pass\n",
     "test_cases": [
       {
         "input": {
@@ -1743,7 +1743,7 @@
       }
     ],
     "editorial_md": null,
-    "method_name": "__init__"
+    "method_name": "reorderList"
   },
   {
     "id": 38,
@@ -1753,7 +1753,7 @@
     "topic": "Linked List",
     "neetcode_video_url": "https://www.youtube.com/watch?v=XVuQxVej6y8",
     "description_md": "Given the `head` of a linked list, remove the `nth` node from the end of the list and return its head.\n\n**Example 1:**\n\n![](https://assets.leetcode.com/uploads/2020/10/03/remove_ex1.jpg)\n\n```\nInput: head = [1,2,3,4,5], n = 2\nOutput: [1,2,3,5]\n```\n\n**Example 2:**\n\n```\nInput: head = [1], n = 1\nOutput: []\n```\n\n**Example 3:**\n\n```\nInput: head = [1,2], n = 1\nOutput: [1]\n```\n\n**Constraints:**\n\n*   The number of nodes in the list is `sz`.\n*   `1 <= sz <= 30`\n*   `0 <= Node.val <= 100`\n*   `1 <= n <= sz`\n\n**Follow up:** Could you do this in one pass?",
-    "starter_code": "class Solution:\n    def __init__(self, val=0, next=None):\n        pass\n",
+    "starter_code": "class Solution:\n    def removeNthFromEnd(self, head: Optional[ListNode], n: int) -> Optional[ListNode]:\n        pass\n",
     "test_cases": [
       {
         "input": {
@@ -1796,7 +1796,7 @@
       }
     ],
     "editorial_md": null,
-    "method_name": "__init__"
+    "method_name": "removeNthFromEnd"
   },
   {
     "id": 39,
@@ -1806,7 +1806,7 @@
     "topic": "Linked List",
     "neetcode_video_url": "https://www.youtube.com/watch?v=5Y2EiZST97Y",
     "description_md": "A linked list of length `n` is given such that each node contains an additional random pointer, which could point to any node in the list, or `null`.\n\nConstruct a [**deep copy**](https://en.wikipedia.org/wiki/Object_copying#Deep_copy) of the list. The deep copy should consist of exactly `n` **brand new** nodes, where each new node has its value set to the value of its corresponding original node. Both the `next` and `random` pointer of the new nodes should point to new nodes in the copied list such that the pointers in the original list and copied list represent the same list state. **None of the pointers in the new list should point to nodes in the original list**.\n\nFor example, if there are two nodes `X` and `Y` in the original list, where `X.random --> Y`, then for the corresponding two nodes `x` and `y` in the copied list, `x.random --> y`.\n\nReturn *the head of the copied linked list*.\n\nThe linked list is represented in the input/output as a list of `n` nodes. Each node is represented as a pair of `[val, random_index]` where:\n\n*   `val`: an integer representing `Node.val`\n*   `random_index`: the index of the node (range from `0` to `n-1`) that the `random` pointer points to, or `null` if it does not point to any node.\n\nYour code will **only** be given the `head` of the original linked list.\n\n**Example 1:**\n\n![](https://assets.leetcode.com/uploads/2019/12/18/e1.png)\n\n```\nInput: head = [[7,null],[13,0],[11,4],[10,2],[1,0]]\nOutput: [[7,null],[13,0],[11,4],[10,2],[1,0]]\n```\n\n**Example 2:**\n\n![](https://assets.leetcode.com/uploads/2019/12/18/e2.png)\n\n```\nInput: head = [[1,1],[2,1]]\nOutput: [[1,1],[2,1]]\n```\n\n**Example 3:**\n\n**![](https://assets.leetcode.com/uploads/2019/12/18/e3.png)**\n\n```\nInput: head = [[3,null],[3,0],[3,null]]\nOutput: [[3,null],[3,0],[3,null]]\n```\n\n**Constraints:**\n\n*   `0 <= n <= 1000`\n*   `-104 <= Node.val <= 104`\n*   `Node.random` is `null` or is pointing to some node in the linked list.",
-    "starter_code": "class Solution:\n    def __init__(self, x: int, next: 'Node' = None, random: 'Node' = None):\n        pass\n",
+    "starter_code": "class Solution:\n    def copyRandomList(self, head: 'Optional[Node]') -> 'Optional[Node]':\n        pass\n",
     "test_cases": [
       {
         "input": {
@@ -1914,7 +1914,7 @@
       }
     ],
     "editorial_md": null,
-    "method_name": "__init__"
+    "method_name": "copyRandomList"
   },
   {
     "id": 40,
@@ -1924,7 +1924,7 @@
     "topic": "Linked List",
     "neetcode_video_url": "https://www.youtube.com/watch?v=wgFPrzTjm7s",
     "description_md": "You are given two **non-empty** linked lists representing two non-negative integers. The digits are stored in **reverse order**, and each of their nodes contains a single digit. Add the two numbers and return the sum as a linked list.\n\nYou may assume the two numbers do not contain any leading zero, except the number 0 itself.\n\n**Example 1:**\n\n![](https://assets.leetcode.com/uploads/2020/10/02/addtwonumber1.jpg)\n\n```\nInput: l1 = [2,4,3], l2 = [5,6,4]\nOutput: [7,0,8]\nExplanation: 342 + 465 = 807.\n```\n\n**Example 2:**\n\n```\nInput: l1 = [0], l2 = [0]\nOutput: [0]\n```\n\n**Example 3:**\n\n```\nInput: l1 = [9,9,9,9,9,9,9], l2 = [9,9,9,9]\nOutput: [8,9,9,9,0,0,0,1]\n```\n\n**Constraints:**\n\n*   The number of nodes in each linked list is in the range `[1, 100]`.\n*   `0 <= Node.val <= 9`\n*   It is guaranteed that the list represents a number that does not have leading zeros.",
-    "starter_code": "class Solution:\n    def __init__(self, val=0, next=None):\n        pass\n",
+    "starter_code": "class Solution:\n    def addTwoNumbers(self, l1: Optional[ListNode], l2: Optional[ListNode]) -> Optional[ListNode]:\n        pass\n",
     "test_cases": [
       {
         "input": {
@@ -1989,7 +1989,7 @@
       }
     ],
     "editorial_md": null,
-    "method_name": "__init__"
+    "method_name": "addTwoNumbers"
   },
   {
     "id": 41,
@@ -1999,7 +1999,7 @@
     "topic": "Linked List",
     "neetcode_video_url": "https://www.youtube.com/watch?v=gBTe7lFR3vc",
     "description_md": "Given `head`, the head of a linked list, determine if the linked list has a cycle in it.\n\nThere is a cycle in a linked list if there is some node in the list that can be reached again by continuously following the `next` pointer. Internally, `pos` is used to denote the index of the node that tail's `next` pointer is connected to. **Note that `pos` is not passed as a parameter**.\n\nReturn `true` *if there is a cycle in the linked list*. Otherwise, return `false`.\n\n**Example 1:**\n\n![](https://assets.leetcode.com/uploads/2018/12/07/circularlinkedlist.png)\n\n```\nInput: head = [3,2,0,-4], pos = 1\nOutput: true\nExplanation: There is a cycle in the linked list, where the tail connects to the 1st node (0-indexed).\n```\n\n**Example 2:**\n\n![](https://assets.leetcode.com/uploads/2018/12/07/circularlinkedlist_test2.png)\n\n```\nInput: head = [1,2], pos = 0\nOutput: true\nExplanation: There is a cycle in the linked list, where the tail connects to the 0th node.\n```\n\n**Example 3:**\n\n![](https://assets.leetcode.com/uploads/2018/12/07/circularlinkedlist_test3.png)\n\n```\nInput: head = [1], pos = -1\nOutput: false\nExplanation: There is no cycle in the linked list.\n```\n\n**Constraints:**\n\n*   The number of the nodes in the list is in the range `[0, 104]`.\n*   `-105 <= Node.val <= 105`\n*   `pos` is `-1` or a **valid index** in the linked-list.\n\n**Follow up:** Can you solve it using `O(1)` (i.e. constant) memory?",
-    "starter_code": "class Solution:\n    def __init__(self, x):\n        pass\n",
+    "starter_code": "class Solution:\n    def hasCycle(self, head: Optional[ListNode]) -> bool:\n        pass\n",
     "test_cases": [
       {
         "input": {
@@ -2034,7 +2034,7 @@
       }
     ],
     "editorial_md": null,
-    "method_name": "__init__"
+    "method_name": "hasCycle"
   },
   {
     "id": 42,
@@ -2094,7 +2094,7 @@
     "topic": "Linked List",
     "neetcode_video_url": "https://www.youtube.com/watch?v=7ABFKPK2hD4",
     "description_md": "Design a data structure that follows the constraints of a **[Least Recently Used (LRU) cache](https://en.wikipedia.org/wiki/Cache_replacement_policies#LRU)**.\n\nImplement the `LRUCache` class:\n\n*   `LRUCache(int capacity)` Initialize the LRU cache with **positive** size `capacity`.\n*   `int get(int key)` Return the value of the `key` if the key exists, otherwise return `-1`.\n*   `void put(int key, int value)` Update the value of the `key` if the `key` exists. Otherwise, add the `key-value` pair to the cache. If the number of keys exceeds the `capacity` from this operation, **evict** the least recently used key.\n\nThe functions `get` and `put` must each run in `O(1)` average time complexity.\n\n**Example 1:**\n\n```\nInput\n[\"LRUCache\", \"put\", \"put\", \"get\", \"put\", \"get\", \"put\", \"get\", \"get\", \"get\"]\n[[2], [1, 1], [2, 2], [1], [3, 3], [2], [4, 4], [1], [3], [4]]\nOutput\n[null, null, null, 1, null, -1, null, -1, 3, 4]\n\nExplanation\nLRUCache lRUCache = new LRUCache(2);\nlRUCache.put(1, 1); // cache is {1=1}\nlRUCache.put(2, 2); // cache is {1=1, 2=2}\nlRUCache.get(1);    // return 1\nlRUCache.put(3, 3); // LRU key was 2, evicts key 2, cache is {1=1, 3=3}\nlRUCache.get(2);    // returns -1 (not found)\nlRUCache.put(4, 4); // LRU key was 1, evicts key 1, cache is {4=4, 3=3}\nlRUCache.get(1);    // return -1 (not found)\nlRUCache.get(3);    // return 3\nlRUCache.get(4);    // return 4\n```\n\n**Constraints:**\n\n*   `1 <= capacity <= 3000`\n*   `0 <= key <= 104`\n*   `0 <= value <= 105`\n*   At most `2 * 105` calls will be made to `get` and `put`.",
-    "starter_code": "class Solution:\n    def __init__(self, capacity: int):\n        pass\n",
+    "starter_code": "class LRUCache:\n\n    def __init__(self, capacity: int):\n        \n\n    def get(self, key: int) -> int:\n        \n\n    def put(self, key: int, value: int) -> None:\n        \n\n\n# obj = LRUCache(capacity)\n# obj.put(key,value)\n",
     "test_cases": [
       {
         "input": {},
@@ -2112,7 +2112,7 @@
     "topic": "Linked List",
     "neetcode_video_url": "https://www.youtube.com/watch?v=q5a5OiGbT6Q",
     "description_md": "You are given an array of `k` linked-lists `lists`, each linked-list is sorted in ascending order.\n\n*Merge all the linked-lists into one sorted linked-list and return it.*\n\n**Example 1:**\n\n```\nInput: lists = [[1,4,5],[1,3,4],[2,6]]\nOutput: [1,1,2,3,4,4,5,6]\nExplanation: The linked-lists are:\n[\n  1->4->5,\n  1->3->4,\n  2->6\n]\nmerging them into one sorted linked list:\n1->1->2->3->4->4->5->6\n```\n\n**Example 2:**\n\n```\nInput: lists = []\nOutput: []\n```\n\n**Example 3:**\n\n```\nInput: lists = [[]]\nOutput: []\n```\n\n**Constraints:**\n\n*   `k == lists.length`\n*   `0 <= k <= 104`\n*   `0 <= lists[i].length <= 500`\n*   `-104 <= lists[i][j] <= 104`\n*   `lists[i]` is sorted in **ascending order**.\n*   The sum of `lists[i].length` will not exceed `104`.",
-    "starter_code": "class Solution:\n    def __init__(self, val=0, next=None):\n        pass\n",
+    "starter_code": "class Solution:\n    def mergeKLists(self, lists: List[Optional[ListNode]]) -> Optional[ListNode]:\n        pass\n",
     "test_cases": [
       {
         "input": {
@@ -2160,7 +2160,7 @@
       }
     ],
     "editorial_md": null,
-    "method_name": "__init__"
+    "method_name": "mergeKLists"
   },
   {
     "id": 45,
@@ -2170,7 +2170,7 @@
     "topic": "Linked List",
     "neetcode_video_url": "https://www.youtube.com/watch?v=1UOPsfP85V4",
     "description_md": "Given the `head` of a linked list, reverse the nodes of the list `k` at a time, and return *the modified list*.\n\n`k` is a positive integer and is less than or equal to the length of the linked list. If the number of nodes is not a multiple of `k` then left-out nodes, in the end, should remain as it is.\n\nYou may not alter the values in the list's nodes, only nodes themselves may be changed.\n\n**Example 1:**\n\n![](https://assets.leetcode.com/uploads/2020/10/03/reverse_ex1.jpg)\n\n```\nInput: head = [1,2,3,4,5], k = 2\nOutput: [2,1,4,3,5]\n```\n\n**Example 2:**\n\n![](https://assets.leetcode.com/uploads/2020/10/03/reverse_ex2.jpg)\n\n```\nInput: head = [1,2,3,4,5], k = 3\nOutput: [3,2,1,4,5]\n```\n\n**Constraints:**\n\n*   The number of nodes in the list is `n`.\n*   `1 <= k <= n <= 5000`\n*   `0 <= Node.val <= 1000`\n\n**Follow-up:** Can you solve the problem in `O(1)` extra memory space?",
-    "starter_code": "class Solution:\n    def __init__(self, val=0, next=None):\n        pass\n",
+    "starter_code": "class Solution:\n    def reverseKGroup(self, head: Optional[ListNode], k: int) -> Optional[ListNode]:\n        pass\n",
     "test_cases": [
       {
         "input": {
@@ -2212,7 +2212,7 @@
       }
     ],
     "editorial_md": null,
-    "method_name": "__init__"
+    "method_name": "reverseKGroup"
   },
   {
     "id": 46,
@@ -2222,7 +2222,7 @@
     "topic": "Trees",
     "neetcode_video_url": "https://www.youtube.com/watch?v=OnSn2XEQ4MY",
     "description_md": "Given the `root` of a binary tree, invert the tree, and return *its root*.\n\n**Example 1:**\n\n![](https://assets.leetcode.com/uploads/2021/03/14/invert1-tree.jpg)\n\n```\nInput: root = [4,2,7,1,3,6,9]\nOutput: [4,7,2,9,6,3,1]\n```\n\n**Example 2:**\n\n![](https://assets.leetcode.com/uploads/2021/03/14/invert2-tree.jpg)\n\n```\nInput: root = [2,1,3]\nOutput: [2,3,1]\n```\n\n**Example 3:**\n\n```\nInput: root = []\nOutput: []\n```\n\n**Constraints:**\n\n*   The number of nodes in the tree is in the range `[0, 100]`.\n*   `-100 <= Node.val <= 100`",
-    "starter_code": "class Solution:\n    def __init__(self, val=0, left=None, right=None):\n        pass\n",
+    "starter_code": "class Solution:\n    def invertTree(self, root: Optional[TreeNode]) -> Optional[TreeNode]:\n        pass\n",
     "test_cases": [
       {
         "input": {
@@ -2268,7 +2268,7 @@
       }
     ],
     "editorial_md": null,
-    "method_name": "__init__"
+    "method_name": "invertTree"
   },
   {
     "id": 47,
@@ -2278,7 +2278,7 @@
     "topic": "Trees",
     "neetcode_video_url": "https://www.youtube.com/watch?v=hTM3phVI6YQ",
     "description_md": "Given the `root` of a binary tree, return *its maximum depth*.\n\nA binary tree's **maximum depth** is the number of nodes along the longest path from the root node down to the farthest leaf node.\n\n**Example 1:**\n\n![](https://assets.leetcode.com/uploads/2020/11/26/tmp-tree.jpg)\n\n```\nInput: root = [3,9,20,null,null,15,7]\nOutput: 3\n```\n\n**Example 2:**\n\n```\nInput: root = [1,null,2]\nOutput: 2\n```\n\n**Constraints:**\n\n*   The number of nodes in the tree is in the range `[0, 104]`.\n*   `-100 <= Node.val <= 100`",
-    "starter_code": "class Solution:\n    def __init__(self, val=0, left=None, right=None):\n        pass\n",
+    "starter_code": "class Solution:\n    def maxDepth(self, root: Optional[TreeNode]) -> int:\n        pass\n",
     "test_cases": [
       {
         "input": {
@@ -2306,7 +2306,7 @@
       }
     ],
     "editorial_md": null,
-    "method_name": "__init__"
+    "method_name": "maxDepth"
   },
   {
     "id": 48,
@@ -2316,7 +2316,7 @@
     "topic": "Trees",
     "neetcode_video_url": "https://www.youtube.com/watch?v=bkxqA8Rfv04",
     "description_md": "Given the `root` of a binary tree, return *the length of the **diameter** of the tree*.\n\nThe **diameter** of a binary tree is the **length** of the longest path between any two nodes in a tree. This path may or may not pass through the `root`.\n\nThe **length** of a path between two nodes is represented by the number of edges between them.\n\n**Example 1:**\n\n![](https://assets.leetcode.com/uploads/2021/03/06/diamtree.jpg)\n\n```\nInput: root = [1,2,3,4,5]\nOutput: 3\nExplanation: 3 is the length of the path [4,2,1,3] or [5,2,1,3].\n```\n\n**Example 2:**\n\n```\nInput: root = [1,2]\nOutput: 1\n```\n\n**Constraints:**\n\n*   The number of nodes in the tree is in the range `[1, 104]`.\n*   `-100 <= Node.val <= 100`",
-    "starter_code": "class Solution:\n    def __init__(self, val=0, left=None, right=None):\n        pass\n",
+    "starter_code": "class Solution:\n    def diameterOfBinaryTree(self, root: Optional[TreeNode]) -> int:\n        pass\n",
     "test_cases": [
       {
         "input": {
@@ -2341,7 +2341,7 @@
       }
     ],
     "editorial_md": null,
-    "method_name": "__init__"
+    "method_name": "diameterOfBinaryTree"
   },
   {
     "id": 49,
@@ -2351,7 +2351,7 @@
     "topic": "Trees",
     "neetcode_video_url": "https://www.youtube.com/watch?v=QfJsau0ItOY",
     "description_md": "Given a binary tree, determine if it is **height-balanced**.\n\n**Example 1:**\n\n![](https://assets.leetcode.com/uploads/2020/10/06/balance_1.jpg)\n\n```\nInput: root = [3,9,20,null,null,15,7]\nOutput: true\n```\n\n**Example 2:**\n\n![](https://assets.leetcode.com/uploads/2020/10/06/balance_2.jpg)\n\n```\nInput: root = [1,2,2,3,3,null,null,4,4]\nOutput: false\n```\n\n**Example 3:**\n\n```\nInput: root = []\nOutput: true\n```\n\n**Constraints:**\n\n*   The number of nodes in the tree is in the range `[0, 5000]`.\n*   `-104 <= Node.val <= 104`",
-    "starter_code": "class Solution:\n    def __init__(self, val=0, left=None, right=None):\n        pass\n",
+    "starter_code": "class Solution:\n    def isBalanced(self, root: Optional[TreeNode]) -> bool:\n        pass\n",
     "test_cases": [
       {
         "input": {
@@ -2391,7 +2391,7 @@
       }
     ],
     "editorial_md": null,
-    "method_name": "__init__"
+    "method_name": "isBalanced"
   },
   {
     "id": 50,
@@ -2401,7 +2401,7 @@
     "topic": "Trees",
     "neetcode_video_url": "https://www.youtube.com/watch?v=vRbbcKXCxOw",
     "description_md": "Given the roots of two binary trees `p` and `q`, write a function to check if they are the same or not.\n\nTwo binary trees are considered the same if they are structurally identical, and the nodes have the same value.\n\n**Example 1:**\n\n![](https://assets.leetcode.com/uploads/2020/12/20/ex1.jpg)\n\n```\nInput: p = [1,2,3], q = [1,2,3]\nOutput: true\n```\n\n**Example 2:**\n\n![](https://assets.leetcode.com/uploads/2020/12/20/ex2.jpg)\n\n```\nInput: p = [1,2], q = [1,null,2]\nOutput: false\n```\n\n**Example 3:**\n\n![](https://assets.leetcode.com/uploads/2020/12/20/ex3.jpg)\n\n```\nInput: p = [1,2,1], q = [1,1,2]\nOutput: false\n```\n\n**Constraints:**\n\n*   The number of nodes in both trees is in the range `[0, 100]`.\n*   `-104 <= Node.val <= 104`",
-    "starter_code": "class Solution:\n    def __init__(self, val=0, left=None, right=None):\n        pass\n",
+    "starter_code": "class Solution:\n    def isSameTree(self, p: Optional[TreeNode], q: Optional[TreeNode]) -> bool:\n        pass\n",
     "test_cases": [
       {
         "input": {
@@ -2449,7 +2449,7 @@
       }
     ],
     "editorial_md": null,
-    "method_name": "__init__"
+    "method_name": "isSameTree"
   },
   {
     "id": 51,
@@ -2459,7 +2459,7 @@
     "topic": "Trees",
     "neetcode_video_url": "https://www.youtube.com/watch?v=E36O5SWp-LE",
     "description_md": "Given the roots of two binary trees `root` and `subRoot`, return `true` if there is a subtree of `root` with the same structure and node values of `subRoot` and `false` otherwise.\n\nA subtree of a binary tree `tree` is a tree that consists of a node in `tree` and all of this node's descendants. The tree `tree` could also be considered as a subtree of itself.\n\n**Example 1:**\n\n![](https://assets.leetcode.com/uploads/2021/04/28/subtree1-tree.jpg)\n\n```\nInput: root = [3,4,5,1,2], subRoot = [4,1,2]\nOutput: true\n```\n\n**Example 2:**\n\n![](https://assets.leetcode.com/uploads/2021/04/28/subtree2-tree.jpg)\n\n```\nInput: root = [3,4,5,1,2,null,null,null,null,0], subRoot = [4,1,2]\nOutput: false\n```\n\n**Constraints:**\n\n*   The number of nodes in the `root` tree is in the range `[1, 2000]`.\n*   The number of nodes in the `subRoot` tree is in the range `[1, 1000]`.\n*   `-104 <= root.val <= 104`\n*   `-104 <= subRoot.val <= 104`",
-    "starter_code": "class Solution:\n    def __init__(self, val=0, left=None, right=None):\n        pass\n",
+    "starter_code": "class Solution:\n    def isSubtree(self, root: Optional[TreeNode], subRoot: Optional[TreeNode]) -> bool:\n        pass\n",
     "test_cases": [
       {
         "input": {
@@ -2502,7 +2502,7 @@
       }
     ],
     "editorial_md": null,
-    "method_name": "__init__"
+    "method_name": "isSubtree"
   },
   {
     "id": 52,
@@ -2512,7 +2512,7 @@
     "topic": "Trees",
     "neetcode_video_url": "https://www.youtube.com/watch?v=gs2LMfuOR9k",
     "description_md": "Given a binary search tree (BST), find the lowest common ancestor (LCA) node of two given nodes in the BST.\n\nAccording to the [definition of LCA on Wikipedia](https://en.wikipedia.org/wiki/Lowest_common_ancestor): “The lowest common ancestor is defined between two nodes `p` and `q` as the lowest node in `T` that has both `p` and `q` as descendants (where we allow **a node to be a descendant of itself**).”\n\n**Example 1:**\n\n![](https://assets.leetcode.com/uploads/2018/12/14/binarysearchtree_improved.png)\n\n```\nInput: root = [6,2,8,0,4,7,9,null,null,3,5], p = 2, q = 8\nOutput: 6\nExplanation: The LCA of nodes 2 and 8 is 6.\n```\n\n**Example 2:**\n\n![](https://assets.leetcode.com/uploads/2018/12/14/binarysearchtree_improved.png)\n\n```\nInput: root = [6,2,8,0,4,7,9,null,null,3,5], p = 2, q = 4\nOutput: 2\nExplanation: The LCA of nodes 2 and 4 is 2, since a node can be a descendant of itself according to the LCA definition.\n```\n\n**Example 3:**\n\n```\nInput: root = [2,1], p = 2, q = 1\nOutput: 2\n```\n\n**Constraints:**\n\n*   The number of nodes in the tree is in the range `[2, 105]`.\n*   `-109 <= Node.val <= 109`\n*   All `Node.val` are **unique**.\n*   `p != q`\n*   `p` and `q` will exist in the BST.",
-    "starter_code": "class Solution:\n    def __init__(self, x):\n        pass\n",
+    "starter_code": "class Solution:\n    def lowestCommonAncestor(self, root: 'TreeNode', p: 'TreeNode', q: 'TreeNode') -> 'TreeNode':\n        pass\n",
     "test_cases": [
       {
         "input": {
@@ -2567,7 +2567,7 @@
       }
     ],
     "editorial_md": null,
-    "method_name": "__init__"
+    "method_name": "lowestCommonAncestor"
   },
   {
     "id": 53,
@@ -2577,7 +2577,7 @@
     "topic": "Trees",
     "neetcode_video_url": "https://www.youtube.com/watch?v=6ZnyEApgFYg",
     "description_md": "Given the `root` of a binary tree, return *the level order traversal of its nodes' values*. (i.e., from left to right, level by level).\n\n**Example 1:**\n\n![](https://assets.leetcode.com/uploads/2021/02/19/tree1.jpg)\n\n```\nInput: root = [3,9,20,null,null,15,7]\nOutput: [[3],[9,20],[15,7]]\n```\n\n**Example 2:**\n\n```\nInput: root = [1]\nOutput: [[1]]\n```\n\n**Example 3:**\n\n```\nInput: root = []\nOutput: []\n```\n\n**Constraints:**\n\n*   The number of nodes in the tree is in the range `[0, 2000]`.\n*   `-1000 <= Node.val <= 1000`",
-    "starter_code": "class Solution:\n    def __init__(self, val=0, left=None, right=None):\n        pass\n",
+    "starter_code": "class Solution:\n    def levelOrder(self, root: Optional[TreeNode]) -> List[List[int]]:\n        pass\n",
     "test_cases": [
       {
         "input": {
@@ -2625,7 +2625,7 @@
       }
     ],
     "editorial_md": null,
-    "method_name": "__init__"
+    "method_name": "levelOrder"
   },
   {
     "id": 54,
@@ -2635,7 +2635,7 @@
     "topic": "Trees",
     "neetcode_video_url": "https://www.youtube.com/watch?v=d4zLyf32e3I",
     "description_md": "Given the `root` of a binary tree, imagine yourself standing on the **right side** of it, return *the values of the nodes you can see ordered from top to bottom*.\n\n**Example 1:**\n\n**Input:** root = \\[1,2,3,null,5,null,4\\]\n\n**Output:** \\[1,3,4\\]\n\n**Explanation:**\n\n![](https://assets.leetcode.com/uploads/2024/11/24/tmpd5jn43fs-1.png)\n\n**Example 2:**\n\n**Input:** root = \\[1,2,3,4,null,null,null,5\\]\n\n**Output:** \\[1,3,4,5\\]\n\n**Explanation:**\n\n![](https://assets.leetcode.com/uploads/2024/11/24/tmpkpe40xeh-1.png)\n\n**Example 3:**\n\n**Input:** root = \\[1,null,3\\]\n\n**Output:** \\[1,3\\]\n\n**Example 4:**\n\n**Input:** root = \\[\\]\n\n**Output:** \\[\\]\n\n**Constraints:**\n\n*   The number of nodes in the tree is in the range `[0, 100]`.\n*   `-100 <= Node.val <= 100`",
-    "starter_code": "class Solution:\n    def __init__(self, val=0, left=None, right=None):\n        pass\n",
+    "starter_code": "class Solution:\n    def rightSideView(self, root: Optional[TreeNode]) -> List[int]:\n        pass\n",
     "test_cases": [
       {
         "input": {
@@ -2663,7 +2663,7 @@
       }
     ],
     "editorial_md": null,
-    "method_name": "__init__"
+    "method_name": "rightSideView"
   },
   {
     "id": 55,
@@ -2673,7 +2673,7 @@
     "topic": "Trees",
     "neetcode_video_url": "https://www.youtube.com/watch?v=7cp5imvDzl4",
     "description_md": "Given a binary tree `root`, a node *X* in the tree is named **good** if in the path from root to *X* there are no nodes with a value *greater than* X.\n\nReturn the number of **good** nodes in the binary tree.\n\n**Example 1:**\n\n**![](https://assets.leetcode.com/uploads/2020/04/02/test_sample_1.png)**\n\n```\nInput: root = [3,1,4,3,null,1,5]\nOutput: 4\nExplanation: Nodes in blue are good.\nRoot Node (3) is always a good node.\nNode 4 -> (3,4) is the maximum value in the path starting from the root.\nNode 5 -> (3,4,5) is the maximum value in the path\nNode 3 -> (3,1,3) is the maximum value in the path.\n```\n\n**Example 2:**\n\n**![](https://assets.leetcode.com/uploads/2020/04/02/test_sample_2.png)**\n\n```\nInput: root = [3,3,null,4,2]\nOutput: 3\nExplanation: Node 2 -> (3, 3, 2) is not good, because \"3\" is higher than it.\n```\n\n**Example 3:**\n\n```\nInput: root = [1]\nOutput: 1\nExplanation: Root is considered as good.\n```\n\n**Constraints:**\n\n*   The number of nodes in the binary tree is in the range `[1, 10^5]`.\n*   Each node's value is between `[-10^4, 10^4]`.",
-    "starter_code": "class Solution:\n    def __init__(self, val=0, left=None, right=None):\n        pass\n",
+    "starter_code": "class Solution:\n    def goodNodes(self, root: TreeNode) -> int:\n        pass\n",
     "test_cases": [
       {
         "input": {
@@ -2711,7 +2711,7 @@
       }
     ],
     "editorial_md": null,
-    "method_name": "__init__"
+    "method_name": "goodNodes"
   },
   {
     "id": 56,
@@ -2721,7 +2721,7 @@
     "topic": "Trees",
     "neetcode_video_url": "https://www.youtube.com/watch?v=s6ATEkipzow",
     "description_md": "Given the `root` of a binary tree, *determine if it is a valid binary search tree (BST)*.\n\nA **valid BST** is defined as follows:\n\n*   The left subtree of a node contains only nodes with keys **strictly less than** the node's key.\n*   The right subtree of a node contains only nodes with keys **strictly greater than** the node's key.\n*   Both the left and right subtrees must also be binary search trees.\n\n**Example 1:**\n\n![](https://assets.leetcode.com/uploads/2020/12/01/tree1.jpg)\n\n```\nInput: root = [2,1,3]\nOutput: true\n```\n\n**Example 2:**\n\n![](https://assets.leetcode.com/uploads/2020/12/01/tree2.jpg)\n\n```\nInput: root = [5,1,4,null,null,3,6]\nOutput: false\nExplanation: The root node's value is 5 but its right child's value is 4.\n```\n\n**Constraints:**\n\n*   The number of nodes in the tree is in the range `[1, 104]`.\n*   `-231 <= Node.val <= 231 - 1`",
-    "starter_code": "class Solution:\n    def __init__(self, val=0, left=None, right=None):\n        pass\n",
+    "starter_code": "class Solution:\n    def isValidBST(self, root: Optional[TreeNode]) -> bool:\n        pass\n",
     "test_cases": [
       {
         "input": {
@@ -2749,7 +2749,7 @@
       }
     ],
     "editorial_md": null,
-    "method_name": "__init__"
+    "method_name": "isValidBST"
   },
   {
     "id": 57,
@@ -2759,7 +2759,7 @@
     "topic": "Trees",
     "neetcode_video_url": "https://www.youtube.com/watch?v=5LUXSvjmGCw",
     "description_md": "Given the `root` of a binary search tree, and an integer `k`, return *the* `kth` *smallest value (**1-indexed**) of all the values of the nodes in the tree*.\n\n**Example 1:**\n\n![](https://assets.leetcode.com/uploads/2021/01/28/kthtree1.jpg)\n\n```\nInput: root = [3,1,4,null,2], k = 1\nOutput: 1\n```\n\n**Example 2:**\n\n![](https://assets.leetcode.com/uploads/2021/01/28/kthtree2.jpg)\n\n```\nInput: root = [5,3,6,2,4,null,null,1], k = 3\nOutput: 3\n```\n\n**Constraints:**\n\n*   The number of nodes in the tree is `n`.\n*   `1 <= k <= n <= 104`\n*   `0 <= Node.val <= 104`\n\n**Follow up:** If the BST is modified often (i.e., we can do insert and delete operations) and you need to find the kth smallest frequently, how would you optimize?",
-    "starter_code": "class Solution:\n    def __init__(self, val=0, left=None, right=None):\n        pass\n",
+    "starter_code": "class Solution:\n    def kthSmallest(self, root: Optional[TreeNode], k: int) -> int:\n        pass\n",
     "test_cases": [
       {
         "input": {
@@ -2792,7 +2792,7 @@
       }
     ],
     "editorial_md": null,
-    "method_name": "__init__"
+    "method_name": "kthSmallest"
   },
   {
     "id": 58,
@@ -2802,7 +2802,7 @@
     "topic": "Trees",
     "neetcode_video_url": "https://www.youtube.com/watch?v=ihj4IQGZ2zc",
     "description_md": "Given two integer arrays `preorder` and `inorder` where `preorder` is the preorder traversal of a binary tree and `inorder` is the inorder traversal of the same tree, construct and return *the binary tree*.\n\n**Example 1:**\n\n![](https://assets.leetcode.com/uploads/2021/02/19/tree.jpg)\n\n```\nInput: preorder = [3,9,20,15,7], inorder = [9,3,15,20,7]\nOutput: [3,9,20,null,null,15,7]\n```\n\n**Example 2:**\n\n```\nInput: preorder = [-1], inorder = [-1]\nOutput: [-1]\n```\n\n**Constraints:**\n\n*   `1 <= preorder.length <= 3000`\n*   `inorder.length == preorder.length`\n*   `-3000 <= preorder[i], inorder[i] <= 3000`\n*   `preorder` and `inorder` consist of **unique** values.\n*   Each value of `inorder` also appears in `preorder`.\n*   `preorder` is **guaranteed** to be the preorder traversal of the tree.\n*   `inorder` is **guaranteed** to be the inorder traversal of the tree.",
-    "starter_code": "class Solution:\n    def __init__(self, val=0, left=None, right=None):\n        pass\n",
+    "starter_code": "class Solution:\n    def buildTree(self, preorder: List[int], inorder: List[int]) -> Optional[TreeNode]:\n        pass\n",
     "test_cases": [
       {
         "input": {
@@ -2846,7 +2846,7 @@
       }
     ],
     "editorial_md": null,
-    "method_name": "__init__"
+    "method_name": "buildTree"
   },
   {
     "id": 59,
@@ -2856,7 +2856,7 @@
     "topic": "Trees",
     "neetcode_video_url": "https://www.youtube.com/watch?v=Hr5cWUld4vU",
     "description_md": "A **path** in a binary tree is a sequence of nodes where each pair of adjacent nodes in the sequence has an edge connecting them. A node can only appear in the sequence **at most once**. Note that the path does not need to pass through the root.\n\nThe **path sum** of a path is the sum of the node's values in the path.\n\nGiven the `root` of a binary tree, return *the maximum **path sum** of any **non-empty** path*.\n\n**Example 1:**\n\n![](https://assets.leetcode.com/uploads/2020/10/13/exx1.jpg)\n\n```\nInput: root = [1,2,3]\nOutput: 6\nExplanation: The optimal path is 2 -> 1 -> 3 with a path sum of 2 + 1 + 3 = 6.\n```\n\n**Example 2:**\n\n![](https://assets.leetcode.com/uploads/2020/10/13/exx2.jpg)\n\n```\nInput: root = [-10,9,20,null,null,15,7]\nOutput: 42\nExplanation: The optimal path is 15 -> 20 -> 7 with a path sum of 15 + 20 + 7 = 42.\n```\n\n**Constraints:**\n\n*   The number of nodes in the tree is in the range `[1, 3 * 104]`.\n*   `-1000 <= Node.val <= 1000`",
-    "starter_code": "class Solution:\n    def __init__(self, val=0, left=None, right=None):\n        pass\n",
+    "starter_code": "class Solution:\n    def maxPathSum(self, root: Optional[TreeNode]) -> int:\n        pass\n",
     "test_cases": [
       {
         "input": {
@@ -2884,7 +2884,7 @@
       }
     ],
     "editorial_md": null,
-    "method_name": "__init__"
+    "method_name": "maxPathSum"
   },
   {
     "id": 60,
@@ -2894,7 +2894,7 @@
     "topic": "Trees",
     "neetcode_video_url": "https://www.youtube.com/watch?v=u4JAi2JJhI8",
     "description_md": "Serialization is the process of converting a data structure or object into a sequence of bits so that it can be stored in a file or memory buffer, or transmitted across a network connection link to be reconstructed later in the same or another computer environment.\n\nDesign an algorithm to serialize and deserialize a binary tree. There is no restriction on how your serialization/deserialization algorithm should work. You just need to ensure that a binary tree can be serialized to a string and this string can be deserialized to the original tree structure.\n\n**Clarification:** The input/output format is the same as [how LeetCode serializes a binary tree](https://support.leetcode.com/hc/en-us/articles/32442719377939-How-to-create-test-cases-on-LeetCode#h_01J5EGREAW3NAEJ14XC07GRW1A). You do not necessarily need to follow this format, so please be creative and come up with different approaches yourself.\n\n**Example 1:**\n\n![](https://assets.leetcode.com/uploads/2020/09/15/serdeser.jpg)\n\n```\nInput: root = [1,2,3,null,null,4,5]\nOutput: [1,2,3,null,null,4,5]\n```\n\n**Example 2:**\n\n```\nInput: root = []\nOutput: []\n```\n\n**Constraints:**\n\n*   The number of nodes in the tree is in the range `[0, 104]`.\n*   `-1000 <= Node.val <= 1000`",
-    "starter_code": "class Solution:\n    def __init__(self, x):\n        pass\n",
+    "starter_code": "class Codec:\n\n    def serialize(self, root):\n        \"\"\"Encodes a tree to a single string.\n        \n        :type root: TreeNode\n        :rtype: str\n        \"\"\"\n        \n\n    def deserialize(self, data):\n        \"\"\"Decodes your encoded data to tree.\n        \n        :type data: str\n        :rtype: TreeNode\n        \"\"\"\n        \n\n# ser = Codec()\n# deser = Codec()\n# ans = deser.deserialize(ser.serialize(root))\n",
     "test_cases": [
       {
         "input": {
@@ -2926,7 +2926,7 @@
       }
     ],
     "editorial_md": null,
-    "method_name": "__init__"
+    "method_name": "serialize"
   },
   {
     "id": 61,
@@ -2936,7 +2936,7 @@
     "topic": "Tries",
     "neetcode_video_url": "https://www.youtube.com/watch?v=oobqoCJlHA0",
     "description_md": "A [**trie**](https://en.wikipedia.org/wiki/Trie) (pronounced as \"try\") or **prefix tree** is a tree data structure used to efficiently store and retrieve keys in a dataset of strings. There are various applications of this data structure, such as autocomplete and spellchecker.\n\nImplement the Trie class:\n\n*   `Trie()` Initializes the trie object.\n*   `void insert(String word)` Inserts the string `word` into the trie.\n*   `boolean search(String word)` Returns `true` if the string `word` is in the trie (i.e., was inserted before), and `false` otherwise.\n*   `boolean startsWith(String prefix)` Returns `true` if there is a previously inserted string `word` that has the prefix `prefix`, and `false` otherwise.\n\n**Example 1:**\n\n```\nInput\n[\"Trie\", \"insert\", \"search\", \"search\", \"startsWith\", \"insert\", \"search\"]\n[[], [\"apple\"], [\"apple\"], [\"app\"], [\"app\"], [\"app\"], [\"app\"]]\nOutput\n[null, null, true, false, true, null, true]\n\nExplanation\nTrie trie = new Trie();\ntrie.insert(\"apple\");\ntrie.search(\"apple\");   // return True\ntrie.search(\"app\");     // return False\ntrie.startsWith(\"app\"); // return True\ntrie.insert(\"app\");\ntrie.search(\"app\");     // return True\n```\n\n**Constraints:**\n\n*   `1 <= word.length, prefix.length <= 2000`\n*   `word` and `prefix` consist only of lowercase English letters.\n*   At most `3 * 104` calls **in total** will be made to `insert`, `search`, and `startsWith`.",
-    "starter_code": "class Solution:\n    def __init__(self):\n        pass\n",
+    "starter_code": "class Trie:\n\n    def __init__(self):\n        \n\n    def insert(self, word: str) -> None:\n        \n\n    def search(self, word: str) -> bool:\n        \n\n    def startsWith(self, prefix: str) -> bool:\n        \n\n\n# obj = Trie()\n# obj.insert(word)\n",
     "test_cases": [
       {
         "input": {},
@@ -2954,7 +2954,7 @@
     "topic": "Tries",
     "neetcode_video_url": "https://www.youtube.com/watch?v=BTf05gs_8iU",
     "description_md": "Design a data structure that supports adding new words and finding if a string matches any previously added string.\n\nImplement the `WordDictionary` class:\n\n*   `WordDictionary()` Initializes the object.\n*   `void addWord(word)` Adds `word` to the data structure, it can be matched later.\n*   `bool search(word)` Returns `true` if there is any string in the data structure that matches `word` or `false` otherwise. `word` may contain dots `'.'` where dots can be matched with any letter.\n\n**Example:**\n\n```\nInput\n[\"WordDictionary\",\"addWord\",\"addWord\",\"addWord\",\"search\",\"search\",\"search\",\"search\"]\n[[],[\"bad\"],[\"dad\"],[\"mad\"],[\"pad\"],[\"bad\"],[\".ad\"],[\"b..\"]]\nOutput\n[null,null,null,null,false,true,true,true]\n\nExplanation\nWordDictionary wordDictionary = new WordDictionary();\nwordDictionary.addWord(\"bad\");\nwordDictionary.addWord(\"dad\");\nwordDictionary.addWord(\"mad\");\nwordDictionary.search(\"pad\"); // return False\nwordDictionary.search(\"bad\"); // return True\nwordDictionary.search(\".ad\"); // return True\nwordDictionary.search(\"b..\"); // return True\n```\n\n**Constraints:**\n\n*   `1 <= word.length <= 25`\n*   `word` in `addWord` consists of lowercase English letters.\n*   `word` in `search` consist of `'.'` or lowercase English letters.\n*   There will be at most `2` dots in `word` for `search` queries.\n*   At most `104` calls will be made to `addWord` and `search`.",
-    "starter_code": "class Solution:\n    def __init__(self):\n        pass\n",
+    "starter_code": "class WordDictionary:\n\n    def __init__(self):\n        \n\n    def addWord(self, word: str) -> None:\n        \n\n    def search(self, word: str) -> bool:\n        \n\n\n# obj = WordDictionary()\n# obj.addWord(word)\n",
     "test_cases": [
       {
         "input": {},
@@ -3044,7 +3044,7 @@
     "topic": "Heap / Priority Queue",
     "neetcode_video_url": "https://www.youtube.com/watch?v=hOjcdrqMoQ8",
     "description_md": "You are part of a university admissions office and need to keep track of the `kth` highest test score from applicants in real-time. This helps to determine cut-off marks for interviews and admissions dynamically as new applicants submit their scores.\n\nYou are tasked to implement a class which, for a given integer `k`, maintains a stream of test scores and continuously returns the `k`th highest test score **after** a new score has been submitted. More specifically, we are looking for the `k`th highest score in the sorted list of all scores.\n\nImplement the `KthLargest` class:\n\n*   `KthLargest(int k, int[] nums)` Initializes the object with the integer `k` and the stream of test scores `nums`.\n*   `int add(int val)` Adds a new test score `val` to the stream and returns the element representing the `kth` largest element in the pool of test scores so far.\n\n**Example 1:**\n\n**Input:**  \n\\[\"KthLargest\", \"add\", \"add\", \"add\", \"add\", \"add\"\\]  \n\\[\\[3, \\[4, 5, 8, 2\\]\\], \\[3\\], \\[5\\], \\[10\\], \\[9\\], \\[4\\]\\]\n\n**Output:** \\[null, 4, 5, 5, 8, 8\\]\n\n**Explanation:**\n\nKthLargest kthLargest = new KthLargest(3, \\[4, 5, 8, 2\\]);  \nkthLargest.add(3); // return 4  \nkthLargest.add(5); // return 5  \nkthLargest.add(10); // return 5  \nkthLargest.add(9); // return 8  \nkthLargest.add(4); // return 8\n\n**Example 2:**\n\n**Input:**  \n\\[\"KthLargest\", \"add\", \"add\", \"add\", \"add\"\\]  \n\\[\\[4, \\[7, 7, 7, 7, 8, 3\\]\\], \\[2\\], \\[10\\], \\[9\\], \\[9\\]\\]\n\n**Output:** \\[null, 7, 7, 7, 8\\]\n\n**Explanation:**\n\nKthLargest kthLargest = new KthLargest(4, \\[7, 7, 7, 7, 8, 3\\]);  \nkthLargest.add(2); // return 7  \nkthLargest.add(10); // return 7  \nkthLargest.add(9); // return 7  \nkthLargest.add(9); // return 8\n\n**Constraints:**\n\n*   `0 <= nums.length <= 104`\n*   `1 <= k <= nums.length + 1`\n*   `-104 <= nums[i] <= 104`\n*   `-104 <= val <= 104`\n*   At most `104` calls will be made to `add`.",
-    "starter_code": "class Solution:\n    def __init__(self, k: int, nums: List[int]):\n        pass\n",
+    "starter_code": "class KthLargest:\n\n    def __init__(self, k: int, nums: List[int]):\n        \n\n    def add(self, val: int) -> int:\n        \n\n\n# obj = KthLargest(k, nums)\n",
     "test_cases": [
       {
         "input": {},
@@ -3245,7 +3245,7 @@
     "topic": "Heap / Priority Queue",
     "neetcode_video_url": "https://www.youtube.com/watch?v=pNichitDD2E",
     "description_md": "Design a simplified version of Twitter where users can post tweets, follow/unfollow another user, and is able to see the `10` most recent tweets in the user's news feed.\n\nImplement the `Twitter` class:\n\n*   `Twitter()` Initializes your twitter object.\n*   `void postTweet(int userId, int tweetId)` Composes a new tweet with ID `tweetId` by the user `userId`. Each call to this function will be made with a unique `tweetId`.\n*   `List<Integer> getNewsFeed(int userId)` Retrieves the `10` most recent tweet IDs in the user's news feed. Each item in the news feed must be posted by users who the user followed or by the user themself. Tweets must be **ordered from most recent to least recent**.\n*   `void follow(int followerId, int followeeId)` The user with ID `followerId` started following the user with ID `followeeId`.\n*   `void unfollow(int followerId, int followeeId)` The user with ID `followerId` started unfollowing the user with ID `followeeId`.\n\n**Example 1:**\n\n```\nInput\n[\"Twitter\", \"postTweet\", \"getNewsFeed\", \"follow\", \"postTweet\", \"getNewsFeed\", \"unfollow\", \"getNewsFeed\"]\n[[], [1, 5], [1], [1, 2], [2, 6], [1], [1, 2], [1]]\nOutput\n[null, null, [5], null, null, [6, 5], null, [5]]\n\nExplanation\nTwitter twitter = new Twitter();\ntwitter.postTweet(1, 5); // User 1 posts a new tweet (id = 5).\ntwitter.getNewsFeed(1);  // User 1's news feed should return a list with 1 tweet id -> [5]. return [5]\ntwitter.follow(1, 2);    // User 1 follows user 2.\ntwitter.postTweet(2, 6); // User 2 posts a new tweet (id = 6).\ntwitter.getNewsFeed(1);  // User 1's news feed should return a list with 2 tweet ids -> [6, 5]. Tweet id 6 should precede tweet id 5 because it is posted after tweet id 5.\ntwitter.unfollow(1, 2);  // User 1 unfollows user 2.\ntwitter.getNewsFeed(1);  // User 1's news feed should return a list with 1 tweet id -> [5], since user 1 is no longer following user 2.\n```\n\n**Constraints:**\n\n*   `1 <= userId, followerId, followeeId <= 500`\n*   `0 <= tweetId <= 104`\n*   All the tweets have **unique** IDs.\n*   At most `3 * 104` calls will be made to `postTweet`, `getNewsFeed`, `follow`, and `unfollow`.\n*   A user cannot follow himself.",
-    "starter_code": "class Solution:\n    def __init__(self):\n        pass\n",
+    "starter_code": "class Twitter:\n\n    def __init__(self):\n        \n\n    def postTweet(self, userId: int, tweetId: int) -> None:\n        \n\n    def getNewsFeed(self, userId: int) -> List[int]:\n        \n\n    def follow(self, followerId: int, followeeId: int) -> None:\n        \n\n    def unfollow(self, followerId: int, followeeId: int) -> None:\n        \n\n\n# obj = Twitter()\n# obj.postTweet(userId,tweetId)\n# obj.follow(followerId,followeeId)\n# obj.unfollow(followerId,followeeId)\n",
     "test_cases": [
       {
         "input": {},
@@ -3263,7 +3263,7 @@
     "topic": "Heap / Priority Queue",
     "neetcode_video_url": "https://www.youtube.com/watch?v=itmhHWaHupI",
     "description_md": "The **median** is the middle value in an ordered integer list. If the size of the list is even, there is no middle value, and the median is the mean of the two middle values.\n\n*   For example, for `arr = [2,3,4]`, the median is `3`.\n*   For example, for `arr = [2,3]`, the median is `(2 + 3) / 2 = 2.5`.\n\nImplement the MedianFinder class:\n\n*   `MedianFinder()` initializes the `MedianFinder` object.\n*   `void addNum(int num)` adds the integer `num` from the data stream to the data structure.\n*   `double findMedian()` returns the median of all elements so far. Answers within `10-5` of the actual answer will be accepted.\n\n**Example 1:**\n\n```\nInput\n[\"MedianFinder\", \"addNum\", \"addNum\", \"findMedian\", \"addNum\", \"findMedian\"]\n[[], [1], [2], [], [3], []]\nOutput\n[null, null, null, 1.5, null, 2.0]\n\nExplanation\nMedianFinder medianFinder = new MedianFinder();\nmedianFinder.addNum(1);    // arr = [1]\nmedianFinder.addNum(2);    // arr = [1, 2]\nmedianFinder.findMedian(); // return 1.5 (i.e., (1 + 2) / 2)\nmedianFinder.addNum(3);    // arr[1, 2, 3]\nmedianFinder.findMedian(); // return 2.0\n```\n\n**Constraints:**\n\n*   `-105 <= num <= 105`\n*   There will be at least one element in the data structure before calling `findMedian`.\n*   At most `5 * 104` calls will be made to `addNum` and `findMedian`.\n\n**Follow up:**\n\n*   If all integer numbers from the stream are in the range `[0, 100]`, how would you optimize your solution?\n*   If `99%` of all integer numbers from the stream are in the range `[0, 100]`, how would you optimize your solution?",
-    "starter_code": "class Solution:\n    def __init__(self):\n        pass\n",
+    "starter_code": "class MedianFinder:\n\n    def __init__(self):\n        \n\n    def addNum(self, num: int) -> None:\n        \n\n    def findMedian(self) -> float:\n        \n\n\n# obj = MedianFinder()\n# obj.addNum(num)\n",
     "test_cases": [
       {
         "input": {},
@@ -3929,7 +3929,7 @@
     "topic": "Graphs",
     "neetcode_video_url": "https://www.youtube.com/watch?v=mQeF6bN8hMk",
     "description_md": "Given a reference of a node in a **[connected](https://en.wikipedia.org/wiki/Connectivity_\\(graph_theory\\)#Connected_graph)** undirected graph.\n\nReturn a [**deep copy**](https://en.wikipedia.org/wiki/Object_copying#Deep_copy) (clone) of the graph.\n\nEach node in the graph contains a value (`int`) and a list (`List[Node]`) of its neighbors.\n\n```\nclass Node {\n    public int val;\n    public List<Node> neighbors;\n}\n```\n\n**Test case format:**\n\nFor simplicity, each node's value is the same as the node's index (1-indexed). For example, the first node with `val == 1`, the second node with `val == 2`, and so on. The graph is represented in the test case using an adjacency list.\n\n**An adjacency list** is a collection of unordered **lists** used to represent a finite graph. Each list describes the set of neighbors of a node in the graph.\n\nThe given node will always be the first node with `val = 1`. You must return the **copy of the given node** as a reference to the cloned graph.\n\n**Example 1:**\n\n![](https://assets.leetcode.com/uploads/2019/11/04/133_clone_graph_question.png)\n\n```\nInput: adjList = [[2,4],[1,3],[2,4],[1,3]]\nOutput: [[2,4],[1,3],[2,4],[1,3]]\nExplanation: There are 4 nodes in the graph.\n1st node (val = 1)'s neighbors are 2nd node (val = 2) and 4th node (val = 4).\n2nd node (val = 2)'s neighbors are 1st node (val = 1) and 3rd node (val = 3).\n3rd node (val = 3)'s neighbors are 2nd node (val = 2) and 4th node (val = 4).\n4th node (val = 4)'s neighbors are 1st node (val = 1) and 3rd node (val = 3).\n```\n\n**Example 2:**\n\n![](https://assets.leetcode.com/uploads/2020/01/07/graph.png)\n\n```\nInput: adjList = [[]]\nOutput: [[]]\nExplanation: Note that the input contains one empty list. The graph consists of only one node with val = 1 and it does not have any neighbors.\n```\n\n**Example 3:**\n\n```\nInput: adjList = []\nOutput: []\nExplanation: This an empty graph, it does not have any nodes.\n```\n\n**Constraints:**\n\n*   The number of nodes in the graph is in the range `[0, 100]`.\n*   `1 <= Node.val <= 100`\n*   `Node.val` is unique for each node.\n*   There are no repeated edges and no self-loops in the graph.\n*   The Graph is connected and all nodes can be visited starting from the given node.",
-    "starter_code": "class Solution:\n    def __init__(self, val = 0, neighbors = None):\n        pass\n",
+    "starter_code": "class Solution:\n    def cloneGraph(self, node: Optional['Node']) -> Optional['Node']:\n        pass\n",
     "test_cases": [
       {
         "input": {},
@@ -3964,7 +3964,7 @@
       }
     ],
     "editorial_md": null,
-    "method_name": "__init__"
+    "method_name": "cloneGraph"
   },
   {
     "id": 82,
@@ -7024,7 +7024,7 @@
     "topic": "Math & Geometry",
     "neetcode_video_url": "https://www.youtube.com/watch?v=bahebearrDc",
     "description_md": "You are given a stream of points on the X-Y plane. Design an algorithm that:\n\n*   **Adds** new points from the stream into a data structure. **Duplicate** points are allowed and should be treated as different points.\n*   Given a query point, **counts** the number of ways to choose three points from the data structure such that the three points and the query point form an **axis-aligned square** with **positive area**.\n\nAn **axis-aligned square** is a square whose edges are all the same length and are either parallel or perpendicular to the x-axis and y-axis.\n\nImplement the `DetectSquares` class:\n\n*   `DetectSquares()` Initializes the object with an empty data structure.\n*   `void add(int[] point)` Adds a new point `point = [x, y]` to the data structure.\n*   `int count(int[] point)` Counts the number of ways to form **axis-aligned squares** with point `point = [x, y]` as described above.\n\n**Example 1:**\n\n![](https://assets.leetcode.com/uploads/2021/09/01/image.png)\n\n```\nInput\n[\"DetectSquares\", \"add\", \"add\", \"add\", \"count\", \"count\", \"add\", \"count\"]\n[[], [[3, 10]], [[11, 2]], [[3, 2]], [[11, 10]], [[14, 8]], [[11, 2]], [[11, 10]]]\nOutput\n[null, null, null, null, 1, 0, null, 2]\n\nExplanation\nDetectSquares detectSquares = new DetectSquares();\ndetectSquares.add([3, 10]);\ndetectSquares.add([11, 2]);\ndetectSquares.add([3, 2]);\ndetectSquares.count([11, 10]); // return 1. You can choose:\n                               //   - The first, second, and third points\ndetectSquares.count([14, 8]);  // return 0. The query point cannot form a square with any points in the data structure.\ndetectSquares.add([11, 2]);    // Adding duplicate points is allowed.\ndetectSquares.count([11, 10]); // return 2. You can choose:\n                               //   - The first, second, and third points\n                               //   - The first, third, and fourth points\n```\n\n**Constraints:**\n\n*   `point.length == 2`\n*   `0 <= x, y <= 1000`\n*   At most `3000` calls **in total** will be made to `add` and `count`.",
-    "starter_code": "class Solution:\n    def __init__(self):\n        pass\n",
+    "starter_code": "class DetectSquares:\n\n    def __init__(self):\n        \n\n    def add(self, point: List[int]) -> None:\n        \n\n    def count(self, point: List[int]) -> int:\n        \n\n\n# obj = DetectSquares()\n# obj.add(point)\n",
     "test_cases": [
       {
         "input": {},

@@ -72,9 +72,11 @@ describe("neetcode150.json", () => {
     }
   });
 
-  it("starter_code defines class Solution with the declared method_name", () => {
+  it("starter_code defines a class with the declared method_name", () => {
     for (const p of problems) {
-      expect(p.starter_code, p.slug).toContain("class Solution:");
+      // Standard problems use `class Solution:`; design problems use the
+      // problem-specific class (LRUCache, MinStack, Trie, …).
+      expect(p.starter_code, p.slug).toMatch(/^class\s+\w+\s*:/m);
       expect(p.starter_code, p.slug).toContain(`def ${p.method_name}(`);
     }
   });

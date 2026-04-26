@@ -52,4 +52,56 @@ describe("deriveStarter", () => {
     expect(starter).toContain("def twoSum(self, nums: List[int], target: int) -> List[int]:");
     expect(starter.trimEnd().endsWith("pass")).toBe(true);
   });
+
+  it("skips ListNode.__init__ and picks the Solution method", () => {
+    const snippet = `# Definition for singly-linked list.
+# class ListNode:
+#     def __init__(self, val=0, next=None):
+#         self.val = val
+#         self.next = next
+class Solution:
+    def reverseList(self, head: Optional[ListNode]) -> Optional[ListNode]:
+        `;
+    const { starter, methodName } = deriveStarter(snippet);
+    expect(methodName).toBe("reverseList");
+    expect(starter).toContain("def reverseList(self, head: Optional[ListNode])");
+    expect(starter).not.toContain("__init__");
+  });
+
+  it("skips TreeNode.__init__ even when uncommented before class Solution", () => {
+    const snippet = `class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+class Solution:
+    def invertTree(self, root: Optional[TreeNode]) -> Optional[TreeNode]:
+        `;
+    const { starter, methodName } = deriveStarter(snippet);
+    expect(methodName).toBe("invertTree");
+    expect(starter.startsWith("class Solution:")).toBe(true);
+  });
+
+  it("preserves the full skeleton for design problems (no class Solution)", () => {
+    const snippet = `class LRUCache:
+
+    def __init__(self, capacity: int):
+
+
+    def get(self, key: int) -> int:
+
+
+    def put(self, key: int, value: int) -> None:
+
+
+
+# Your LRUCache object will be instantiated and called as such:
+# obj = LRUCache(capacity)
+# param_1 = obj.get(key)
+# obj.put(key,value)`;
+    const { starter, methodName } = deriveStarter(snippet);
+    expect(methodName).toBe("__init__");
+    expect(starter).toContain("class LRUCache:");
+    expect(starter).toContain("def get(self, key: int)");
+    expect(starter).toContain("def put(self, key: int, value: int)");
+    expect(starter).not.toContain("Your LRUCache object");
+  });
 });

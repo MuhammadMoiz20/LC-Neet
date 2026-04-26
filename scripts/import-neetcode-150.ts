@@ -118,21 +118,63 @@ export function parseExamples(md: string, paramNames: string[]): TestCase[] {
 }
 
 /**
- * Rewrite a LeetCode python3 starter snippet into our canonical
- * `class Solution: ... pass` stub.
+ * Rewrite a LeetCode python3 starter snippet into a useful Python stub.
  *
- * Returns the rewritten starter plus the detected method name.
- * Throws if the snippet does not contain a recognisable `def <name>(self, ...)`.
+ * Two modes:
+ *
+ * - Standard problems (have a `class Solution:` line): emit
+ *   `class Solution:\n    <def>\n        pass\n`. We pick the first
+ *   `def <name>(self, ...)` *after* `class Solution:` whose name is not
+ *   `__init__`, which skips LeetCode's commented `ListNode`/`TreeNode`
+ *   helper-class definitions that come before it.
+ *
+ * - Design problems (no `class Solution:`, just the user's class — `LRUCache`,
+ *   `MinStack`, etc.): preserve the original class skeleton (sans trailing
+ *   "Your X object will be..." usage comments) so the user can fill in each
+ *   method. Method name is the first `def` we find (typically `__init__`).
+ *
+ * Throws if no class with a recognisable `def <name>(self, ...)` exists.
  */
 export function deriveStarter(pythonSnippet: string): { starter: string; methodName: string } {
-  const defMatch = pythonSnippet.match(/def\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(\s*self[^)]*\)\s*(?:->\s*[^:]+)?\s*:/);
-  if (!defMatch) {
-    throw new Error("deriveStarter: could not find `def <name>(self, ...)` in snippet");
+  const lines = pythonSnippet.split("\n");
+  const defRe = /^\s*def\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(\s*self[^)]*\)/;
+
+  const solutionIdx = lines.findIndex((l) => /^class\s+Solution\s*:/.test(l));
+  if (solutionIdx >= 0) {
+    for (let i = solutionIdx + 1; i < lines.length; i++) {
+      const m = lines[i].match(defRe);
+      if (!m) continue;
+      if (m[1] === "__init__") continue;
+      const starter = `class Solution:\n${lines[i]}\n        pass\n`;
+      return { starter, methodName: m[1] };
+    }
+    throw new Error(
+      "deriveStarter: found `class Solution:` but no usable method (only __init__?)",
+    );
   }
-  const [defLine] = defMatch;
-  const methodName = defMatch[1];
-  const starter = `class Solution:\n    ${defLine}\n        pass\n`;
-  return { starter, methodName };
+
+  const classIdx = lines.findIndex((l) => /^class\s+[A-Za-z_]\w*\s*:/.test(l));
+  if (classIdx < 0) {
+    throw new Error("deriveStarter: no class definition found in snippet");
+  }
+  let methodName: string | null = null;
+  for (let i = classIdx + 1; i < lines.length; i++) {
+    const m = lines[i].match(defRe);
+    if (m) {
+      methodName = m[1];
+      break;
+    }
+  }
+  if (!methodName) {
+    throw new Error("deriveStarter: class found but no `def <name>(self, ...)` inside");
+  }
+  // Drop trailing "Your X object will be ..." usage block; keep the class body.
+  const body = lines
+    .slice(classIdx)
+    .filter((l) => !/^\s*#\s*(Your|Example|param_)/.test(l))
+    .join("\n")
+    .replace(/\n+$/, "");
+  return { starter: body + "\n", methodName };
 }
 
 type LCParam = { name: string; type?: string };
