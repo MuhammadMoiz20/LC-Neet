@@ -115,7 +115,7 @@ export function AppShell({ children, problems, avatarInitials = "?" }: AppShellP
         onOpenCheatsheet={openCheatsheet}
         avatarInitials={avatarInitials}
       />
-      <div style={{ flex: 1, minHeight: 0, display: "flex", position: "relative" }}>
+      <div style={{ flex: 1, minHeight: 0, minWidth: 0, display: "flex", position: "relative" }}>
         {children}
       </div>
       {paletteOpen && (
