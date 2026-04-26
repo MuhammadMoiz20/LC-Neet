@@ -69,6 +69,24 @@ CREATE TABLE IF NOT EXISTS pattern_counters (
   solved_count INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (user_id, pattern)
 );
+CREATE TABLE IF NOT EXISTS review_queue (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  problem_id INTEGER NOT NULL REFERENCES problems(id),
+  due_at INTEGER NOT NULL,
+  ease REAL NOT NULL DEFAULT 2.5,
+  interval_days INTEGER NOT NULL DEFAULT 1,
+  UNIQUE(user_id, problem_id)
+);
+CREATE INDEX IF NOT EXISTS review_due ON review_queue(user_id, due_at);
+CREATE TABLE IF NOT EXISTS daily (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  date TEXT NOT NULL,
+  problem_id INTEGER NOT NULL REFERENCES problems(id),
+  completed INTEGER NOT NULL DEFAULT 0,
+  UNIQUE(user_id, date)
+);
 `;
 
 let cached: Database.Database | null = null;
