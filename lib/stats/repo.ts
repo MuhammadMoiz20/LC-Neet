@@ -41,6 +41,45 @@ export function getRecentAttempts(
     .all(userId, limit) as RecentAttempt[];
 }
 
+export type LatestAttemptInfo = {
+  status: string;
+  created_at: number;
+};
+
+/**
+ * Latest attempt per problem for a user. Returns a Map keyed by problem_id
+ * containing the most recent attempt's status and created_at timestamp.
+ */
+export function getLatestAttemptByProblem(
+  db: Database.Database,
+  userId: number,
+): Map<number, LatestAttemptInfo> {
+  const rows = db
+    .prepare(
+      `SELECT a.problem_id, a.status, a.created_at
+       FROM attempts a
+       JOIN (
+         SELECT problem_id, MAX(created_at) AS max_created_at
+         FROM attempts
+         WHERE user_id = ?
+         GROUP BY problem_id
+       ) latest
+         ON latest.problem_id = a.problem_id
+        AND latest.max_created_at = a.created_at
+       WHERE a.user_id = ?`,
+    )
+    .all(userId, userId) as {
+    problem_id: number;
+    status: string;
+    created_at: number;
+  }[];
+  const map = new Map<number, LatestAttemptInfo>();
+  for (const r of rows) {
+    map.set(r.problem_id, { status: r.status, created_at: r.created_at });
+  }
+  return map;
+}
+
 /**
  * Day streak = number of consecutive calendar days (in local time, ending today)
  * on which the user made at least one attempt. Today with zero attempts -> 0.
