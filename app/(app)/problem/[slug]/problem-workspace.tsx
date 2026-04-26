@@ -121,17 +121,17 @@ export function ProblemWorkspace({
           problem.method_name,
         );
         setResult(r);
-        const allPassed =
-          r.compile_error === null && r.results.every((c) => c.passed);
+        // Don't record an attempt when the code didn't even run (syntax/import
+        // errors before any test executed) — those aren't a real fail.
+        if (r.compile_error) {
+          return;
+        }
+        const allPassed = r.results.every((c) => c.passed);
         const totalMs = r.results.reduce((s, c) => s + c.elapsed_ms, 0);
         const attemptId = await submitAttempt({
           problemId: problem.id,
           code,
-          status: r.compile_error
-            ? "error"
-            : allPassed
-              ? "passed"
-              : "failed",
+          status: allPassed ? "passed" : "failed",
           runtimeMs: totalMs,
           mode: interviewMode ? "interview" : mode,
         });
