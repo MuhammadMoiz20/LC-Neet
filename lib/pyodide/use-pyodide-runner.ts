@@ -13,7 +13,7 @@ export function usePyodideRunner() {
   const pendingRef = useRef<
     Map<string, (r: WorkerResponse) => void>
   >(new Map());
-  const [status, setStatus] = useState<Status>("idle");
+  const [status, setStatus] = useState<Status>("loading");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
@@ -33,7 +33,6 @@ export function usePyodideRunner() {
       setStatus("error");
       setErrorMsg(e.message);
     };
-    setStatus("loading");
     const id = crypto.randomUUID();
     pendingRef.current.set(id, (resp) => {
       if (resp.type === "ready") setStatus("ready");
