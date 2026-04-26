@@ -13,6 +13,7 @@
     "e2e": "playwright test"
   },
   "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.2.119",
     "@monaco-editor/react": "^4.7.0",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.9.0",
