@@ -54,30 +54,22 @@ function coerceValue(raw: string): unknown {
 /**
  * Extract `{ input, expected }` pairs from rendered example blocks.
  *
- * Walks every fenced code block in `md`, finds an `Input:` line and an
- * `Output:` line within it, and splits the input on top-level
- * `<paramName> = ` boundaries (using the supplied `paramNames`). Code blocks
- * that do not contain both an Input and an Output are skipped.
+ * Handles both the older fenced-code-block format and the modern inline
+ * `**Input:**` / `**Output:**` paragraph format LeetCode uses today. For each
+ * example, splits the input on top-level `<paramName> = ` boundaries (using
+ * the supplied `paramNames`).
  */
 export function parseExamples(md: string, paramNames: string[]): TestCase[] {
   const cases: TestCase[] = [];
-  const fenceRe = /```[a-zA-Z0-9]*\n([\s\S]*?)```/g;
 
-  let match: RegExpExecArray | null;
-  while ((match = fenceRe.exec(md)) !== null) {
-    const block = match[1] ?? "";
-    const inputMatch = block.match(/Input:\s*([\s\S]*?)(?:\n\s*Output:|$)/);
-    const outputMatch = block.match(/Output:\s*([\s\S]*?)(?:\n\s*Explanation:|\n\s*$|$)/);
-    if (!inputMatch || !outputMatch) continue;
-
-    const inputText = inputMatch[1].trim();
-    const outputText = outputMatch[1].trim();
-
+  const pushCase = (rawInput: string, rawOutput: string) => {
+    const inputText = rawInput.trim();
+    const outputText = rawOutput.trim();
+    if (!outputText) return;
     const input: Record<string, unknown> = {};
     if (paramNames.length === 0) {
       input["arg"] = coerceValue(inputText);
     } else {
-      // Build positions of each `<paramName> = ` within the input text.
       const positions: Array<{ name: string; start: number; valueStart: number }> = [];
       for (const name of paramNames) {
         const re = new RegExp(`(^|[,\\s])${name}\\s*=\\s*`, "g");
@@ -91,18 +83,35 @@ export function parseExamples(md: string, paramNames: string[]): TestCase[] {
         }
       }
       positions.sort((a, b) => a.start - b.start);
-
       for (let i = 0; i < positions.length; i++) {
         const { name, valueStart } = positions[i];
         const end = i + 1 < positions.length ? positions[i + 1].start : inputText.length;
         let raw = inputText.slice(valueStart, end).trim();
-        // Strip trailing comma left over from the next-arg boundary.
         raw = raw.replace(/,\s*$/, "").trim();
         input[name] = coerceValue(raw);
       }
     }
-
     cases.push({ input, expected: coerceValue(outputText) });
+  };
+
+  // Format A: fenced code blocks with `Input: ... Output: ...` inside.
+  const fenceRe = /```[a-zA-Z0-9]*\n([\s\S]*?)```/g;
+  let match: RegExpExecArray | null;
+  while ((match = fenceRe.exec(md)) !== null) {
+    const block = match[1] ?? "";
+    const inputMatch = block.match(/Input:\s*([\s\S]*?)(?:\n\s*Output:|$)/);
+    const outputMatch = block.match(/Output:\s*([\s\S]*?)(?:\n\s*Explanation:|\n\s*$|$)/);
+    if (inputMatch && outputMatch) pushCase(inputMatch[1], outputMatch[1]);
+  }
+  if (cases.length > 0) return cases;
+
+  // Format B: inline `**Input:** ... **Output:** ...` paragraphs. Strip bold
+  // markers first so the regex stays simple.
+  const flat = md.replace(/\*\*/g, "");
+  const inlineRe =
+    /Input:\s*([\s\S]*?)\n\s*Output:\s*([\s\S]*?)(?=\n\s*(?:Explanation:|Example\b|Constraints\b|Follow ?up\b|Note:|$))/g;
+  while ((match = inlineRe.exec(flat)) !== null) {
+    pushCase(match[1], match[2]);
   }
 
   return cases;
