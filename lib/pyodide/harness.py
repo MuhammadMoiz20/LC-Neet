@@ -3,6 +3,17 @@
 Loads the user's solution module, instantiates `Solution`, calls
 `<method_name>(**case["input"])`, compares to `case["expected"]`,
 captures stdout and exceptions per case.
+
+Auto-converts LeetCode-style serialized inputs/outputs:
+- For inputs, when the param name conventionally holds a linked-list head
+  (`head`, `l1`, `l2`, ...) or a tree root (`root`, `subRoot`, `p`, `q`),
+  the array value is converted to a `ListNode` chain or `TreeNode` tree.
+- For outputs, `ListNode` returns are serialized back to a list and
+  `TreeNode` returns to a level-order array (with `None` for missing).
+
+The user's code namespace is pre-populated with `ListNode`, `TreeNode`,
+common typing imports, and helpers, so starter code referencing
+`Optional[ListNode]` parses without further imports.
 """
 
 import io
@@ -11,6 +22,134 @@ import sys
 import time
 import traceback
 import types
+import math
+import bisect
+import heapq
+from collections import Counter, defaultdict, deque
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
+
+
+class ListNode:
+    def __init__(self, val=0, next=None):
+        self.val = val
+        self.next = next
+
+
+class TreeNode:
+    def __init__(self, val=0, left=None, right=None):
+        self.val = val
+        self.left = left
+        self.right = right
+
+
+# Names that conventionally hold a linked-list head/tree root in LeetCode
+# problem signatures. Used to auto-deserialize array-shaped test inputs.
+_LIST_INPUT_NAMES = {"head", "head1", "head2", "l1", "l2", "list1", "list2"}
+_TREE_INPUT_NAMES = {"root", "root1", "root2", "p", "q", "subRoot"}
+
+
+def _to_list_node(arr):
+    if arr is None:
+        return None
+    dummy = ListNode()
+    cur = dummy
+    for v in arr:
+        cur.next = ListNode(v)
+        cur = cur.next
+    return dummy.next
+
+
+def _from_list_node(node):
+    out = []
+    while node is not None:
+        out.append(node.val)
+        node = node.next
+    return out
+
+
+def _to_tree_node(arr):
+    if not arr or arr[0] is None:
+        return None
+    root = TreeNode(arr[0])
+    queue = deque([root])
+    i = 1
+    while queue and i < len(arr):
+        node = queue.popleft()
+        if i < len(arr):
+            v = arr[i]
+            i += 1
+            if v is not None:
+                node.left = TreeNode(v)
+                queue.append(node.left)
+        if i < len(arr):
+            v = arr[i]
+            i += 1
+            if v is not None:
+                node.right = TreeNode(v)
+                queue.append(node.right)
+    return root
+
+
+def _from_tree_node(root):
+    if root is None:
+        return []
+    out = []
+    queue = deque([root])
+    while queue:
+        node = queue.popleft()
+        if node is None:
+            out.append(None)
+        else:
+            out.append(node.val)
+            queue.append(node.left)
+            queue.append(node.right)
+    while out and out[-1] is None:
+        out.pop()
+    return out
+
+
+def _convert_input(name, value):
+    if value is None:
+        return None
+    if name == "lists" and isinstance(value, list):
+        # merge-k-sorted-lists: List[Optional[ListNode]] serialized as List[List[int]].
+        if all(v is None or isinstance(v, list) for v in value):
+            return [_to_list_node(v) for v in value]
+    if name in _LIST_INPUT_NAMES and isinstance(value, list):
+        if all(not isinstance(v, list) for v in value):
+            return _to_list_node(value)
+    if name in _TREE_INPUT_NAMES and isinstance(value, list):
+        return _to_tree_node(value)
+    return value
+
+
+def _convert_output(actual):
+    if isinstance(actual, ListNode):
+        return _from_list_node(actual)
+    if isinstance(actual, TreeNode):
+        return _from_tree_node(actual)
+    return actual
+
+
+# Names made available inside the user's solution module namespace so that
+# starter signatures referencing `Optional[ListNode]` etc. parse.
+_USER_NS_INJECT = {
+    "ListNode": ListNode,
+    "TreeNode": TreeNode,
+    "Any": Any,
+    "Dict": Dict,
+    "List": List,
+    "Optional": Optional,
+    "Set": Set,
+    "Tuple": Tuple,
+    "Union": Union,
+    "Counter": Counter,
+    "defaultdict": defaultdict,
+    "deque": deque,
+    "heapq": heapq,
+    "math": math,
+    "bisect": bisect,
+}
 
 
 def _run_one(solution, method_name, case):
@@ -20,7 +159,20 @@ def _run_one(solution, method_name, case):
     start = time.perf_counter()
     try:
         method = getattr(solution, method_name)
-        actual = method(**case["input"])
+        raw_input = case["input"]
+        kwargs = {k: _convert_input(k, v) for k, v in raw_input.items()}
+        # If any input had a linked-list/tree-shaped name, we assume the
+        # return value is the same kind. This lets `None` (empty list/tree)
+        # compare equal to LeetCode's `[]` serialization.
+        returns_list = any(
+            k in _LIST_INPUT_NAMES or k == "lists" for k in raw_input
+        )
+        returns_tree = any(k in _TREE_INPUT_NAMES for k in raw_input)
+        raw_actual = method(**kwargs)
+        if raw_actual is None and (returns_list or returns_tree):
+            actual = []
+        else:
+            actual = _convert_output(raw_actual)
         elapsed_ms = int((time.perf_counter() - start) * 1000)
         passed = actual == case["expected"]
         return {
@@ -49,6 +201,7 @@ def run_tests(user_code: str, test_cases_json: str, method_name: str) -> str:
     """Entry point called from JS. Returns JSON string."""
     cases = json.loads(test_cases_json)
     mod = types.ModuleType("user_solution")
+    mod.__dict__.update(_USER_NS_INJECT)
     try:
         exec(user_code, mod.__dict__)
     except Exception:
