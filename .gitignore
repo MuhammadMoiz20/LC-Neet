@@ -26,6 +26,8 @@ tests/e2e/.auth
 # misc
 .DS_Store
 *.pem
+__pycache__/
+*.pyc
 
 # debug
 npm-debug.log*

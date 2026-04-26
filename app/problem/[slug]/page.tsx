@@ -5,11 +5,24 @@ import { ProblemWorkspace } from "./problem-workspace";
 
 export default async function ProblemPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ mode?: string; duration?: string }>;
 }) {
   const { slug } = await params;
+  const sp = await searchParams;
   const problem = getProblemBySlug(getDb(), slug);
   if (!problem) notFound();
-  return <ProblemWorkspace problem={problem} />;
+  const interviewMode = sp.mode === "interview";
+  const interviewDurationMin = Number(sp.duration ?? "30");
+  return (
+    <ProblemWorkspace
+      problem={problem}
+      interviewMode={interviewMode}
+      interviewDurationMin={
+        Number.isFinite(interviewDurationMin) ? interviewDurationMin : 30
+      }
+    />
+  );
 }

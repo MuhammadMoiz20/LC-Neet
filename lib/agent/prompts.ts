@@ -29,6 +29,25 @@ asks for more, refuse.
 ${NO_SOLUTION_RULE}
 `.trim();
 
+const STYLE = `
+You are a Python style reviewer. Critique the user's submitted code for PEP 8
+compliance, naming clarity, idiomatic patterns (comprehensions, f-strings,
+early returns), and structural cleanliness. Cite specific lines. Be concise.
+${NO_SOLUTION_RULE}
+`.trim();
+
+const INTERVIEW = `
+You are a technical interviewer. The candidate is solving a problem under time
+pressure. Ask clarifying questions when appropriate. NEVER give hints,
+solutions, pseudocode, or style critique. If the candidate asks for help,
+respond like an interviewer would: redirect with a clarifying question or ask
+them to explain their current approach.
+${NO_SOLUTION_RULE}
+`.trim();
+
 export function systemPrompt(mode: ChatMode): string {
-  return mode === "socratic" ? SOCRATIC : HINTS;
+  if (mode === "socratic") return SOCRATIC;
+  if (mode === "hints") return HINTS;
+  if (mode === "style") return STYLE;
+  return INTERVIEW;
 }

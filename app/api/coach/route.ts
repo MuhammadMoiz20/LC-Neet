@@ -7,7 +7,7 @@ import { streamCoach } from "@/lib/agent/stream";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const VALID_MODES: ChatMode[] = ["socratic", "hints"];
+const VALID_MODES: ChatMode[] = ["socratic", "hints", "style", "interview"];
 
 export async function GET(req: NextRequest) {
   const userId = await requireUserId();

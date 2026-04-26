@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Problem } from "@/lib/problems/types";
 import { CodeEditor } from "@/components/code-editor";
 import { usePyodideRunner } from "@/lib/pyodide/use-pyodide-runner";
@@ -7,11 +7,36 @@ import type { RunResult } from "@/lib/pyodide/worker-protocol";
 import { submitAttempt } from "./actions";
 import { CoachPanel } from "@/components/coach-panel";
 
-export function ProblemWorkspace({ problem }: { problem: Problem }) {
+function formatMs(ms: number): string {
+  const clamped = Math.max(0, ms);
+  const total = Math.floor(clamped / 1000);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+export function ProblemWorkspace({
+  problem,
+  interviewMode = false,
+  interviewDurationMin = 30,
+}: {
+  problem: Problem;
+  interviewMode?: boolean;
+  interviewDurationMin?: number;
+}) {
   const [code, setCode] = useState(problem.starter_code);
   const [result, setResult] = useState<RunResult | null>(null);
   const { status, run, errorMsg } = usePyodideRunner();
   const [coachOpen, setCoachOpen] = useState(false);
+  const [analysisAttemptId, setAnalysisAttemptId] = useState<number | null>(null);
+  const [endsAt] = useState(() =>
+    interviewMode ? Date.now() + interviewDurationMin * 60_000 : 0,
+  );
+  const [remainingMs, setRemainingMs] = useState(() =>
+    interviewMode ? interviewDurationMin * 60_000 : 0,
+  );
+  const [ended, setEnded] = useState(false);
+  const autoSubmittedRef = useRef(false);
   const lastRunOutput = result
     ? result.compile_error ??
       result.results
@@ -19,7 +44,19 @@ export function ProblemWorkspace({ problem }: { problem: Problem }) {
         .join("\n")
     : null;
 
+  const expired = interviewMode && remainingMs <= 0;
+
+  useEffect(() => {
+    if (!interviewMode) return;
+    if (expired) return;
+    const id = setInterval(() => {
+      setRemainingMs(Math.max(0, endsAt - Date.now()));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [interviewMode, expired, endsAt]);
+
   async function onRun() {
+    setAnalysisAttemptId(null);
     const r = await run(
       code,
       JSON.stringify(problem.test_cases),
@@ -28,7 +65,7 @@ export function ProblemWorkspace({ problem }: { problem: Problem }) {
     setResult(r);
     const allPassed = r.compile_error === null && r.results.every((c) => c.passed);
     const totalMs = r.results.reduce((s, c) => s + c.elapsed_ms, 0);
-    await submitAttempt({
+    const attemptId = await submitAttempt({
       problemId: problem.id,
       code,
       status: r.compile_error
@@ -37,12 +74,35 @@ export function ProblemWorkspace({ problem }: { problem: Problem }) {
           ? "passed"
           : "failed",
       runtimeMs: totalMs,
-      mode: "run",
+      mode: interviewMode ? "interview" : "run",
     });
+    if (allPassed && !interviewMode) {
+      fetch(`/api/analysis/${attemptId}`, { method: "POST" }).catch(() => {});
+      setAnalysisAttemptId(attemptId);
+    }
+    return attemptId;
   }
+
+  useEffect(() => {
+    if (!interviewMode) return;
+    if (!expired) return;
+    if (autoSubmittedRef.current) return;
+    autoSubmittedRef.current = true;
+    setEnded(true);
+    onRun().catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [interviewMode, expired]);
 
   return (
     <main className="grid grid-cols-2 gap-4 h-screen p-4">
+      {interviewMode && (
+        <div className="col-span-2 flex items-center justify-between bg-zinc-900 border-b border-zinc-800 px-4 py-2 -m-4 mb-2">
+          <span className="text-sm font-semibold">
+            Interview · {interviewDurationMin}m
+          </span>
+          <span className="font-mono text-lg">{formatMs(remainingMs)}</span>
+        </div>
+      )}
       <section className="overflow-auto pr-4 border-r border-zinc-800">
         <div className="flex items-start justify-between gap-2 mb-2">
           <h1 className="text-2xl font-semibold">
@@ -62,14 +122,16 @@ export function ProblemWorkspace({ problem }: { problem: Problem }) {
           {problem.description_md}
         </article>
       </section>
-      <section className="flex flex-col gap-2">
+      <section className="flex flex-col gap-2 relative">
         <div className="flex-1 border border-zinc-800 rounded overflow-hidden">
           <CodeEditor value={code} onChange={setCode} />
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={onRun}
-            disabled={status !== "ready" && status !== "running"}
+            disabled={
+              (status !== "ready" && status !== "running") || ended
+            }
             className="px-4 py-2 rounded bg-emerald-600 text-white disabled:opacity-50"
           >
             {status === "loading"
@@ -80,7 +142,25 @@ export function ProblemWorkspace({ problem }: { problem: Problem }) {
           </button>
           {errorMsg && <span className="text-red-500 text-sm">{errorMsg}</span>}
         </div>
-        <ResultsPanel result={result} />
+        {analysisAttemptId && !interviewMode && (
+          <a
+            href={`/analysis/${analysisAttemptId}`}
+            className="text-sm text-emerald-400 hover:underline"
+          >
+            Analysis ready → /analysis/{analysisAttemptId}
+          </a>
+        )}
+        <ResultsPanel result={result} interviewMode={interviewMode} />
+        {ended && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+            <div className="text-center space-y-2">
+              <p className="text-xl font-semibold">Session ended</p>
+              <p className="text-sm text-zinc-400">
+                Your final attempt has been submitted.
+              </p>
+            </div>
+          </div>
+        )}
       </section>
       <CoachPanel
         problemId={problem.id}
@@ -88,18 +168,34 @@ export function ProblemWorkspace({ problem }: { problem: Problem }) {
         lastRunOutput={lastRunOutput}
         open={coachOpen}
         onClose={() => setCoachOpen(false)}
+        lockedMode={interviewMode ? "interview" : undefined}
       />
     </main>
   );
 }
 
-function ResultsPanel({ result }: { result: RunResult | null }) {
+function ResultsPanel({
+  result,
+  interviewMode,
+}: {
+  result: RunResult | null;
+  interviewMode: boolean;
+}) {
   if (!result) return null;
   if (result.compile_error) {
     return (
       <pre className="bg-red-950/40 border border-red-900 p-2 rounded text-sm overflow-auto max-h-64">
-        {result.compile_error}
+        {interviewMode
+          ? `Runtime error: ${result.compile_error.split("\n")[0] ?? "error"}`
+          : result.compile_error}
       </pre>
+    );
+  }
+  if (interviewMode) {
+    return (
+      <div className="p-2 rounded text-sm border border-emerald-900 bg-emerald-950/30">
+        Compiled
+      </div>
     );
   }
   return (

@@ -8,6 +8,9 @@ import {
 } from "@/lib/stats/repo";
 import { requireUserId } from "@/lib/auth/current-user";
 import { SignOutButton } from "@/components/sign-out-button";
+import { getOrCreateDaily } from "@/lib/daily/repo";
+import { pickDaily } from "@/lib/daily/pick";
+import { dueReviews } from "@/lib/sr/repo";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +21,16 @@ export default async function Home() {
   const solved = getSolvedProblemIds(db, userId);
   const recent = getRecentAttempts(db, userId, 10);
   const streak = getDayStreak(db, userId);
+
+  // eslint-disable-next-line react-hooks/purity
+  const now = Date.now();
+  const today = new Date(now).toISOString().slice(0, 10);
+  const daily = getOrCreateDaily(db, userId, today, () => pickDaily(db, userId, today, now));
+  const dailyProblem = problems.find((p) => p.id === daily.problem_id);
+  const due = dueReviews(db, userId, now, 3);
+  const dueProblems = due
+    .map((r) => ({ row: r, problem: problems.find((p) => p.id === r.problem_id) }))
+    .filter((x): x is { row: typeof due[number]; problem: NonNullable<typeof x["problem"]> } => Boolean(x.problem));
 
   return (
     <main className="min-h-screen p-6 max-w-4xl mx-auto">
@@ -30,6 +43,41 @@ export default async function Home() {
         <Stat label="Solved" value={`${solved.size} / ${problems.length}`} />
         <Stat label="Day streak" value={streak.toString()} />
         <Stat label="Recent attempts" value={recent.length === 10 ? "10+" : recent.length.toString()} />
+      </section>
+
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        {dailyProblem && (
+          <div className="border border-zinc-800 rounded p-4">
+            <p className="text-xs uppercase tracking-wide text-zinc-500 mb-1">Daily problem</p>
+            <Link href={`/problem/${dailyProblem.slug}`} className="block text-lg font-semibold hover:underline">
+              {dailyProblem.title}
+            </Link>
+            <p className="text-xs text-zinc-500 mt-1">{dailyProblem.difficulty} · {dailyProblem.topic}</p>
+            <p className="text-xs mt-2">
+              {daily.completed ? (
+                <span className="text-emerald-400">✓ Completed</span>
+              ) : solved.has(daily.problem_id) ? (
+                <span className="text-zinc-300">Already solved — try another approach?</span>
+              ) : (
+                <span className="text-zinc-300">Not started</span>
+              )}
+            </p>
+          </div>
+        )}
+        {dueProblems.length > 0 && (
+          <div className="border border-zinc-800 rounded p-4">
+            <p className="text-xs uppercase tracking-wide text-zinc-500 mb-2">Due for review</p>
+            <ul className="space-y-1">
+              {dueProblems.map(({ problem }) => (
+                <li key={problem.id} className="text-sm">
+                  <Link href={`/problem/${problem.slug}`} className="hover:underline">
+                    {problem.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </section>
 
       <section className="mb-8">
