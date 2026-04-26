@@ -33,6 +33,16 @@ CREATE TABLE IF NOT EXISTS attempts (
   created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
 );
 CREATE INDEX IF NOT EXISTS attempts_user_problem ON attempts(user_id, problem_id);
+CREATE TABLE IF NOT EXISTS chat_messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  problem_id INTEGER NOT NULL REFERENCES problems(id),
+  role TEXT NOT NULL CHECK(role IN ('user','assistant')),
+  content TEXT NOT NULL,
+  mode TEXT NOT NULL CHECK(mode IN ('socratic','hints')),
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
+);
+CREATE INDEX IF NOT EXISTS chat_user_problem ON chat_messages(user_id, problem_id, created_at);
 `;
 
 let cached: Database.Database | null = null;
