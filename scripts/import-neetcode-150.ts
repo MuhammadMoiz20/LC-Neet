@@ -1,4 +1,8 @@
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { resolve, dirname } from "node:path";
 import TurndownService from "turndown";
+import { Problem, Problems } from "../lib/problems/types";
 
 export type TestCase = { input: Record<string, unknown>; expected: unknown };
 
@@ -120,4 +124,171 @@ export function deriveStarter(pythonSnippet: string): { starter: string; methodN
   const methodName = defMatch[1];
   const starter = `class Solution:\n    ${defLine}\n        pass\n`;
   return { starter, methodName };
+}
+
+type LCParam = { name: string; type?: string };
+type LCMeta = { name: string; params: LCParam[] };
+type LCFetchResult = { content: string; metaData: LCMeta; python3: string };
+
+const LC_QUERY = `query questionData($titleSlug: String!) {
+  question(titleSlug: $titleSlug) {
+    title
+    content
+    metaData
+    codeSnippets { lang langSlug code }
+    exampleTestcases
+  }
+}`;
+
+/**
+ * Fetch a problem's content + python3 starter from the public LeetCode GraphQL
+ * endpoint. Throws on non-200 or missing data.
+ */
+export async function fetchLC(slug: string): Promise<LCFetchResult> {
+  const res = await fetch("https://leetcode.com/graphql/", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "user-agent": "lcneet-importer/1.0",
+      referer: `https://leetcode.com/problems/${slug}/`,
+    },
+    body: JSON.stringify({
+      query: LC_QUERY,
+      variables: { titleSlug: slug },
+      operationName: "questionData",
+    }),
+  });
+  if (!res.ok) throw new Error(`fetchLC(${slug}): HTTP ${res.status}`);
+  const json = (await res.json()) as {
+    data?: {
+      question?: {
+        content: string | null;
+        metaData: string | null;
+        codeSnippets: Array<{ lang: string; langSlug: string; code: string }> | null;
+      } | null;
+    };
+  };
+  const q = json.data?.question;
+  if (!q || !q.content || !q.metaData || !q.codeSnippets) {
+    throw new Error(`fetchLC(${slug}): missing question data`);
+  }
+  const py = q.codeSnippets.find((s) => s.langSlug === "python3");
+  if (!py) throw new Error(`fetchLC(${slug}): no python3 snippet`);
+  const metaData = JSON.parse(q.metaData) as LCMeta;
+  return { content: q.content, metaData, python3: py.code };
+}
+
+type IndexRow = {
+  id: number;
+  slug: string;
+  title: string;
+  difficulty: "Easy" | "Medium" | "Hard";
+  topic: string;
+  neetcode_video_url: string | null;
+};
+
+function parseRefetchArg(argv: string[]): { all: boolean; slugs: Set<string> } {
+  const arg = argv.find((a) => a.startsWith("--refetch="));
+  if (!arg) return { all: false, slugs: new Set() };
+  const value = arg.slice("--refetch=".length);
+  if (value === "ALL") return { all: true, slugs: new Set() };
+  return { all: false, slugs: new Set(value.split(",").map((s) => s.trim()).filter(Boolean)) };
+}
+
+export async function main(): Promise<void> {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const indexPath = resolve(here, "neetcode-150-index.json");
+  const outPath = resolve(here, "..", "lib", "problems", "neetcode150.json");
+
+  const index = JSON.parse(readFileSync(indexPath, "utf8")) as IndexRow[];
+  if (index.length !== 150) {
+    throw new Error(`expected 150 rows in index, got ${index.length}`);
+  }
+
+  const existing = new Map<string, Problem>();
+  if (existsSync(outPath)) {
+    const raw = JSON.parse(readFileSync(outPath, "utf8")) as unknown;
+    const parsed = Problems.parse(raw);
+    for (const p of parsed) existing.set(p.slug, p);
+  }
+
+  const { all, slugs } = parseRefetchArg(process.argv);
+  const failures: Array<{ slug: string; reason: string }> = [];
+  const out: Problem[] = [];
+
+  for (const row of index) {
+    const cached = existing.get(row.slug);
+    const shouldFetch = all || slugs.has(row.slug) || !cached;
+
+    if (!shouldFetch && cached) {
+      // Overlay metadata from index but preserve fetched fields.
+      out.push({
+        ...cached,
+        id: row.id,
+        title: row.title,
+        difficulty: row.difficulty,
+        topic: row.topic,
+        neetcode_video_url: row.neetcode_video_url,
+      });
+      continue;
+    }
+
+    try {
+      const r = await fetchLC(row.slug);
+      const description_md = htmlToMarkdown(r.content);
+      const { starter, methodName } = deriveStarter(r.python3);
+      const paramNames = r.metaData.params.map((p) => p.name);
+      const cases = parseExamples(description_md, paramNames);
+      let test_cases: TestCase[] = cases;
+      if (cases.length === 0) {
+        test_cases = [{ input: {}, expected: null }];
+        failures.push({ slug: row.slug, reason: "no test cases parsed" });
+      }
+      out.push({
+        id: row.id,
+        slug: row.slug,
+        title: row.title,
+        difficulty: row.difficulty,
+        topic: row.topic,
+        neetcode_video_url: row.neetcode_video_url,
+        description_md,
+        starter_code: starter,
+        test_cases,
+        editorial_md: null,
+        method_name: methodName,
+      });
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      failures.push({ slug: row.slug, reason });
+      if (cached) {
+        out.push({
+          ...cached,
+          id: row.id,
+          title: row.title,
+          difficulty: row.difficulty,
+          topic: row.topic,
+          neetcode_video_url: row.neetcode_video_url,
+        });
+      }
+    }
+
+    await new Promise((r) => setTimeout(r, 350));
+  }
+
+  // Validate before writing — never write an invalid file.
+  const validated = Problems.parse(out);
+  writeFileSync(outPath, JSON.stringify(validated, null, 2) + "\n", "utf8");
+
+  console.log(`wrote ${validated.length} problems to ${outPath}`);
+  if (failures.length > 0) {
+    console.log(`\n${failures.length} slug(s) need manual attention:`);
+    for (const f of failures) console.log(`  - ${f.slug}: ${f.reason}`);
+  }
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
 }
