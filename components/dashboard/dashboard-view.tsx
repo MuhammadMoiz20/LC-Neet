@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Icon, IconButton, Pill } from "@/components/ui";
 import { PatternRail, type PatternRailItem } from "./pattern-rail";
 import { DoNextHero, type DoNextHeroProps } from "./do-next-hero";
@@ -32,7 +33,7 @@ export type DashboardViewProps = {
 };
 
 export function DashboardView(props: DashboardViewProps) {
-  const [activePattern, setActivePattern] = useState<string | null>(null);
+  const router = useRouter();
   const [rightOpen, setRightOpen] = useState(true);
 
   const overallPct = props.totalProblems
@@ -40,15 +41,18 @@ export function DashboardView(props: DashboardViewProps) {
     : 0;
 
   return (
-    <div style={{ display: "flex", flex: 1, minHeight: 0, position: "relative" }}>
+    <div style={{ display: "flex", flex: 1, minWidth: 0, minHeight: 0, position: "relative" }}>
       <PatternRail
         patterns={props.patterns}
-        activeId={activePattern}
-        onSelect={setActivePattern}
+        activeId={null}
+        onSelect={(id) =>
+          router.push(id ? `/problems?pattern=${id}` : "/problems")
+        }
       />
       <main
         style={{
           flex: 1,
+          minWidth: 0,
           overflow: "auto",
           padding: "24px 28px 40px",
         }}

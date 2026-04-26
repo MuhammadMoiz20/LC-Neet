@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Button, Icon, Pill, toast } from "@/components/ui";
 import { PATTERN_GROUPS } from "@/lib/patterns/groups";
@@ -27,7 +28,13 @@ export type ProblemsBrowserProps = {
 };
 
 export function ProblemsBrowser({ rows }: ProblemsBrowserProps) {
-  const [pattern, setPattern] = useState<PatternFilter>("all");
+  const searchParams = useSearchParams();
+  const initialPattern = searchParams.get("pattern");
+  const [pattern, setPattern] = useState<PatternFilter>(
+    initialPattern && PATTERN_GROUPS.some((g) => g.id === initialPattern)
+      ? initialPattern
+      : "all",
+  );
   const [diff, setDiff] = useState<DiffFilter>("all");
   const [status, setStatus] = useState<StatusFilter>("all");
   const [q, setQ] = useState("");
