@@ -12,6 +12,19 @@ export type Analysis = {
   created_at: number;
 };
 
+export type Mistake = {
+  id: number;
+  problem_id: number;
+  category: string;
+  note: string;
+  created_at: number;
+};
+
+export type PatternCounter = {
+  pattern: string;
+  solved_count: number;
+};
+
 const KIND_ORDER: AnalysisKind[] = ["quality", "complexity", "comparison", "pattern", "mistake"];
 
 export function upsertAnalysis(
@@ -23,7 +36,8 @@ export function upsertAnalysis(
      VALUES (@attempt_id, @kind, @content_md, @status)
      ON CONFLICT(attempt_id, kind) DO UPDATE SET
        content_md = excluded.content_md,
-       status = excluded.status`,
+       status = excluded.status,
+       created_at = strftime('%s','now')`,
   ).run(row);
 }
 
@@ -51,12 +65,12 @@ export function listMistakesForUser(
   db: Database.Database,
   userId: number,
   limit = 50,
-): { id: number; problem_id: number; category: string; note: string; created_at: number }[] {
+): Mistake[] {
   return db.prepare(
     `SELECT id, problem_id, category, note, created_at
      FROM mistakes WHERE user_id = ?
      ORDER BY created_at DESC LIMIT ?`,
-  ).all(userId, limit) as never;
+  ).all(userId, limit) as Mistake[];
 }
 
 export function bumpPattern(db: Database.Database, userId: number, pattern: string): void {
@@ -70,8 +84,8 @@ export function bumpPattern(db: Database.Database, userId: number, pattern: stri
 export function listPatternCounters(
   db: Database.Database,
   userId: number,
-): { pattern: string; solved_count: number }[] {
+): PatternCounter[] {
   return db.prepare(
     `SELECT pattern, solved_count FROM pattern_counters WHERE user_id = ? ORDER BY solved_count DESC`,
-  ).all(userId) as never;
+  ).all(userId) as PatternCounter[];
 }
