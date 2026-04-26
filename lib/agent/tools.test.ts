@@ -34,7 +34,6 @@ describe("agent tools", () => {
 
   it("getUserHistory filters by topic and limits", async () => {
     const { db, userId } = await setup();
-    // problem 1 (Valid Anagram) and 3 (Two Sum) — confirm topics in fixture by querying
     const topicRow = db.prepare("SELECT topic FROM problems WHERE id = 1").get() as { topic: string };
     recordAttempt(db, { user_id: userId, problem_id: 1, code: "x", status: "passed", runtime_ms: 1, mode: "run" });
     recordAttempt(db, { user_id: userId, problem_id: 1, code: "x", status: "failed", runtime_ms: 1, mode: "run" });
