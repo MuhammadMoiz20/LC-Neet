@@ -19,7 +19,8 @@ CREATE TABLE IF NOT EXISTS problems (
   description_md TEXT NOT NULL,
   starter_code TEXT NOT NULL,
   test_cases_json TEXT NOT NULL,
-  editorial_md TEXT
+  editorial_md TEXT,
+  method_name TEXT NOT NULL DEFAULT ''
 );
 CREATE TABLE IF NOT EXISTS attempts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -44,6 +45,10 @@ export function getDb(filePath = "data/app.db"): Database.Database {
   db.pragma("journal_mode = WAL");
   db.pragma("foreign_keys = ON");
   db.exec(SCHEMA);
+  const cols = db.prepare("PRAGMA table_info(problems)").all() as { name: string }[];
+  if (!cols.some((c) => c.name === "method_name")) {
+    db.exec("ALTER TABLE problems ADD COLUMN method_name TEXT NOT NULL DEFAULT ''");
+  }
   cached = db;
   cachedPath = filePath;
   return db;

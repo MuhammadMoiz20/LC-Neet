@@ -11,9 +11,9 @@ export function seedProblems(db: Database.Database) {
   const problems = Problems.parse(JSON.parse(raw));
   const stmt = db.prepare(`
     INSERT INTO problems (id, slug, title, difficulty, topic, neetcode_video_url,
-                          description_md, starter_code, test_cases_json, editorial_md)
+                          description_md, starter_code, test_cases_json, editorial_md, method_name)
     VALUES (@id, @slug, @title, @difficulty, @topic, @neetcode_video_url,
-            @description_md, @starter_code, @test_cases_json, @editorial_md)
+            @description_md, @starter_code, @test_cases_json, @editorial_md, @method_name)
     ON CONFLICT(id) DO UPDATE SET
       title=excluded.title,
       difficulty=excluded.difficulty,
@@ -22,7 +22,8 @@ export function seedProblems(db: Database.Database) {
       description_md=excluded.description_md,
       starter_code=excluded.starter_code,
       test_cases_json=excluded.test_cases_json,
-      editorial_md=excluded.editorial_md
+      editorial_md=excluded.editorial_md,
+      method_name=excluded.method_name
   `);
   const tx = db.transaction((rows: typeof problems) => {
     for (const p of rows) {
@@ -37,6 +38,7 @@ export function seedProblems(db: Database.Database) {
         starter_code: p.starter_code,
         test_cases_json: JSON.stringify(p.test_cases),
         editorial_md: p.editorial_md,
+        method_name: p.method_name,
       });
     }
   });

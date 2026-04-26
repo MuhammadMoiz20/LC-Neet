@@ -16,6 +16,7 @@ export const Problem = z.object({
   starter_code: z.string(),
   test_cases: z.array(TestCase),
   editorial_md: z.string().nullable(),
+  method_name: z.string(),
 });
 
 export type Problem = z.infer<typeof Problem>;

@@ -16,6 +16,8 @@ describe("seedProblems", () => {
     seedProblems(db);
     const count = (db.prepare("SELECT COUNT(*) as c FROM problems").get() as { c: number }).c;
     expect(count).toBe(3);
+    const row = db.prepare("SELECT method_name FROM problems WHERE slug = ?").get("two-sum") as { method_name: string };
+    expect(row.method_name).toBe("twoSum");
     db.close();
   });
 

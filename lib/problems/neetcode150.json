@@ -12,7 +12,8 @@
       { "input": { "nums": [2,7,11,15], "target": 9 }, "expected": [0,1] },
       { "input": { "nums": [3,2,4], "target": 6 }, "expected": [1,2] }
     ],
-    "editorial_md": null
+    "editorial_md": null,
+    "method_name": "twoSum"
   },
   {
     "id": 2,
@@ -27,7 +28,8 @@
       { "input": { "s": "anagram", "t": "nagaram" }, "expected": true },
       { "input": { "s": "rat", "t": "car" }, "expected": false }
     ],
-    "editorial_md": null
+    "editorial_md": null,
+    "method_name": "isAnagram"
   },
   {
     "id": 3,
@@ -42,6 +44,7 @@
       { "input": { "nums": [1,2,3,1] }, "expected": true },
       { "input": { "nums": [1,2,3,4] }, "expected": false }
     ],
-    "editorial_md": null
+    "editorial_md": null,
+    "method_name": "containsDuplicate"
   }
 ]
