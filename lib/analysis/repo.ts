@@ -1,6 +1,7 @@
 import type Database from "better-sqlite3";
 
 export type AnalysisKind =
+  | "grade"
   | "quality"
   | "complexity"
   | "comparison"
@@ -32,6 +33,7 @@ export type PatternCounter = {
 };
 
 const KIND_ORDER: AnalysisKind[] = [
+  "grade",
   "quality",
   "complexity",
   "comparison",

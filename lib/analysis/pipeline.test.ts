@@ -44,6 +44,7 @@ async function setup() {
 }
 
 const KINDS: AnalysisKind[] = [
+  "grade",
   "quality",
   "complexity",
   "comparison",
@@ -56,7 +57,7 @@ describe("analysis/pipeline", () => {
     vi.mocked(runOne).mockReset();
   });
 
-  it("inserts 5 rows (one per kind) after run", async () => {
+  it("inserts 6 rows (one per kind) after run", async () => {
     const { db, ctx } = await setup();
     vi.mocked(runOne).mockImplementation(async ({ kind }) => ({
       kind,
@@ -67,10 +68,10 @@ describe("analysis/pipeline", () => {
     await runPipeline(db, ctx);
 
     const rows = getByAttempt(db, ctx.attemptId);
-    expect(rows.length).toBe(5);
+    expect(rows.length).toBe(6);
     expect(rows.map((r) => r.kind)).toEqual(KINDS);
     expect(rows.every((r) => r.status === "done")).toBe(true);
-    expect(vi.mocked(runOne)).toHaveBeenCalledTimes(5);
+    expect(vi.mocked(runOne)).toHaveBeenCalledTimes(6);
   });
 
   it("idempotent short-circuit when all rows already done", async () => {
@@ -93,7 +94,7 @@ describe("analysis/pipeline", () => {
 
     expect(vi.mocked(runOne)).not.toHaveBeenCalled();
     const rows = getByAttempt(db, ctx.attemptId);
-    expect(rows.length).toBe(5);
+    expect(rows.length).toBe(6);
     expect(rows.map((r) => r.content_md)).toEqual(
       KINDS.map((k) => `pre ${k}`),
     );
@@ -162,7 +163,7 @@ describe("analysis/pipeline", () => {
     expect(mistakes[0].problem_id).toBe(ctx.problemId);
   });
 
-  it("interview mode runs 6 kinds and persists 6 rows", async () => {
+  it("interview mode runs 7 kinds and persists 7 rows", async () => {
     const { db, ctx } = await setup();
     vi.mocked(runOne).mockImplementation(async ({ kind }) => ({
       kind,
@@ -173,10 +174,10 @@ describe("analysis/pipeline", () => {
     await runPipeline(db, { ...ctx, mode: "interview" });
 
     const rows = getByAttempt(db, ctx.attemptId);
-    expect(rows.length).toBe(6);
+    expect(rows.length).toBe(7);
     expect(rows.map((r) => r.kind)).toEqual([...KINDS, "interview_debrief"]);
     expect(rows.every((r) => r.status === "done")).toBe(true);
-    expect(vi.mocked(runOne)).toHaveBeenCalledTimes(6);
+    expect(vi.mocked(runOne)).toHaveBeenCalledTimes(7);
   });
 
   it("Category: none does not record a mistake", async () => {

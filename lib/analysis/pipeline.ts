@@ -9,6 +9,7 @@ import {
 } from "./repo";
 
 const KINDS_BASE: AnalysisKind[] = [
+  "grade",
   "quality",
   "complexity",
   "comparison",
@@ -31,17 +32,20 @@ export type PipelineContext = {
 export async function runPipeline(
   db: Database.Database,
   ctx: PipelineContext,
+  opts: { force?: boolean } = {},
 ): Promise<void> {
   const interview = ctx.mode === "interview";
   const kinds: AnalysisKind[] = interview
     ? [...KINDS_BASE, "interview_debrief"]
     : KINDS_BASE;
-  const existing = getByAttempt(db, ctx.attemptId);
-  if (
-    existing.length === kinds.length &&
-    existing.every((r) => r.status !== "pending")
-  ) {
-    return; // idempotent short-circuit
+  if (!opts.force) {
+    const existing = getByAttempt(db, ctx.attemptId);
+    if (
+      existing.length === kinds.length &&
+      existing.every((r) => r.status !== "pending")
+    ) {
+      return; // idempotent short-circuit
+    }
   }
   for (const kind of kinds) {
     upsertAnalysis(db, {
