@@ -48,3 +48,6 @@ next-env.d.ts
 data/
 .env.local
 .commit-dates
+
+# worktrees
+.worktrees/
