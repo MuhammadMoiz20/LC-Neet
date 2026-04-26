@@ -16,6 +16,13 @@ type SectionSpec = {
 
 const SECTIONS: SectionSpec[] = [
   {
+    kind: "grade",
+    label: "Smart grade",
+    icon: "spark",
+    tone: "accent",
+    defaultOpen: true,
+  },
+  {
     kind: "mistake",
     label: "Correctness",
     icon: "check",
@@ -160,7 +167,13 @@ export function AnalysisContent({
                 Analysis failed.
               </p>
             ) : row && row.content_md.trim() ? (
-              <MdBody md={row.content_md} />
+              <MdBody
+                md={
+                  spec.kind === "grade"
+                    ? row.content_md.replace(/^Grade:\s*\d+\s*\n?/, "").trim()
+                    : row.content_md
+                }
+              />
             ) : (
               spec.fallback ?? (
                 <p className="muted" style={{ margin: 0, fontSize: 12.5 }}>
@@ -203,6 +216,7 @@ export function AnalysisHeroPill({ verdict }: { verdict: "Accepted" | "Wrong" | 
 }
 
 export const ANALYSIS_KIND_ORDER: AnalysisKind[] = [
+  "grade",
   "quality",
   "complexity",
   "comparison",
@@ -210,3 +224,12 @@ export const ANALYSIS_KIND_ORDER: AnalysisKind[] = [
   "mistake",
   "interview_debrief",
 ];
+
+/** Pulls "Grade: N" off the top of a grade analysis body. Returns null if not parseable. */
+export function parseGrade(md: string): number | null {
+  const m = md.match(/^Grade:\s*(\d{1,2})\b/);
+  if (!m) return null;
+  const n = Number(m[1]);
+  if (!Number.isFinite(n) || n < 0 || n > 10) return null;
+  return n;
+}

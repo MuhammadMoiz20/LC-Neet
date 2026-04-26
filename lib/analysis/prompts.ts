@@ -13,6 +13,31 @@ You may NOT use:
 If the user pushes for a full runnable solution, refuse.
 `.trim();
 
+const GRADE = `
+You are grading an interview-style coding submission on a strict 0–10 scale.
+Weight the score across these axes:
+
+- Correctness (3 pts): does the approach generalize, not just pass these tests?
+- Complexity (3 pts): is the time/space optimal or close? Penalise brute force
+  when a well-known better approach exists for this pattern.
+- Code quality (2 pts): clarity, idiomatic Python, naming, control flow.
+- Implementation polish (2 pts): edge cases, readability, no dead code.
+
+Use the full range. Anchor points:
+- 10 = optimal complexity, clean and idiomatic, would pass a top-bar interview.
+- 7 = correct, reasonable choices, room to tighten.
+- 4 = works but suboptimal or messy.
+- 0 = broken, absent, or fundamentally wrong approach.
+
+OUTPUT FORMAT — STRICT.
+The very first line of your response MUST be exactly:
+Grade: <integer 0-10>
+Then on the next line a one-sentence headline (≤120 chars).
+Then up to 3 short bullets (each ≤100 chars) justifying the grade.
+Nothing else — no markdown headers, no preamble.
+${NO_SOLUTION_RULE}
+`.trim();
+
 const QUALITY = `
 You are a Python style and quality reviewer. Critique the submitted code for
 PEP 8 compliance, naming clarity (variables, functions, parameters), idiomatic
@@ -79,6 +104,8 @@ ${NO_SOLUTION_RULE}
 
 export function analysisPrompt(kind: AnalysisKind): string {
   switch (kind) {
+    case "grade":
+      return GRADE;
     case "quality":
       return QUALITY;
     case "complexity":

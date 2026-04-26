@@ -6,6 +6,7 @@ import { Icon } from "@/components/ui";
 import {
   AnalysisContent,
   AnalysisHeroPill,
+  parseGrade,
 } from "@/components/analysis/analysis-content";
 
 type AttemptStatus = "passed" | "failed" | "error";
@@ -43,11 +44,37 @@ export function AnalysisView({
   initial: Analysis[];
 }) {
   const [rows, setRows] = useState<Analysis[]>(initial);
+  const [rerunning, setRerunning] = useState(false);
 
   const showInterviewDebrief = rows.some((r) => r.kind === "interview_debrief");
-  const expectedKinds = showInterviewDebrief ? 6 : 5;
+  const expectedKinds = showInterviewDebrief ? 7 : 6;
+  const gradeRow = rows.find((r) => r.kind === "grade");
+  const grade =
+    gradeRow && gradeRow.status === "done" ? parseGrade(gradeRow.content_md) : null;
   const incomplete =
-    rows.length < expectedKinds || rows.some((r) => r.status === "pending");
+    rerunning ||
+    rows.length < expectedKinds ||
+    rows.some((r) => r.status === "pending");
+
+  async function rerun() {
+    if (rerunning) return;
+    setRerunning(true);
+    setRows((prev) =>
+      prev.map((r) => ({ ...r, status: "pending" as const, content_md: "" })),
+    );
+    try {
+      const res = await fetch(`/api/analysis/${attemptId}?force=1`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { rows: Analysis[] };
+        setRows(data.rows);
+      }
+    } catch {
+    } finally {
+      setRerunning(false);
+    }
+  }
 
   useEffect(() => {
     if (!incomplete) return;
@@ -151,6 +178,7 @@ export function AnalysisView({
                 Metrics
               </h3>
               <div className="col" style={{ gap: 10 }}>
+                <GradeBadge grade={grade} />
                 <MetricRow label="Verdict" value={verdict} />
                 <MetricRow
                   label="Runtime"
@@ -173,9 +201,19 @@ export function AnalysisView({
                 Next steps
               </h3>
               <div className="col" style={{ gap: 6 }}>
+                <button
+                  type="button"
+                  onClick={rerun}
+                  disabled={rerunning}
+                  className="row btn btn-sm"
+                  style={{ justifyContent: "space-between" }}
+                >
+                  <span>{rerunning ? "Rerunning…" : "Rerun analysis"}</span>
+                  <Icon name={rerunning ? "spark" : "reset"} size={12} />
+                </button>
                 <Link
                   href={`/problem/${problemSlug}`}
-                  className="row btn btn-sm"
+                  className="row btn btn-sm btn-ghost"
                   style={{ justifyContent: "space-between" }}
                 >
                   <span>Re-open workspace</span>
@@ -195,6 +233,63 @@ export function AnalysisView({
         </div>
       </div>
     </main>
+  );
+}
+
+function gradeColor(g: number): string {
+  if (g >= 9) return "var(--accepted, #34d399)";
+  if (g >= 7) return "var(--accent, #2dd4bf)";
+  if (g >= 4) return "var(--text)";
+  return "var(--rose, #fb7185)";
+}
+
+function GradeBadge({ grade }: { grade: number | null }) {
+  return (
+    <div
+      className="row"
+      style={{
+        alignItems: "baseline",
+        justifyContent: "space-between",
+        padding: "10px 12px",
+        borderRadius: 10,
+        border: "1px solid var(--border)",
+        background: "var(--bg-2)",
+      }}
+    >
+      <span
+        className="muted"
+        style={{
+          fontSize: 11,
+          letterSpacing: ".08em",
+          textTransform: "uppercase",
+          fontWeight: 600,
+        }}
+      >
+        Smart grade
+      </span>
+      <span
+        className="row"
+        style={{ alignItems: "baseline", gap: 2 }}
+      >
+        <span
+          style={{
+            fontSize: 28,
+            fontWeight: 700,
+            letterSpacing: "-0.02em",
+            fontVariantNumeric: "tabular-nums",
+            color: grade != null ? gradeColor(grade) : "var(--text-faint)",
+          }}
+        >
+          {grade != null ? grade : "—"}
+        </span>
+        <span
+          className="muted"
+          style={{ fontSize: 13, fontWeight: 600 }}
+        >
+          /10
+        </span>
+      </span>
+    </div>
   );
 }
 
