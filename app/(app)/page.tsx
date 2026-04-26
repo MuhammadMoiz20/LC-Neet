@@ -70,6 +70,8 @@ export default async function Home() {
   const recent = getRecentAttempts(db, userId, 12);
   const streakCount = getDayStreak(db, userId);
 
+  // Server component: Date.now() is intentionally per-request (not a hook).
+  // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
   const nowSec = Math.floor(now / 1000);
   const today = new Date(now).toISOString().slice(0, 10);

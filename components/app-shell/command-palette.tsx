@@ -43,12 +43,9 @@ export function CommandPalette({
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (open) {
-      setQ("");
-      setSel(0);
-      const t = setTimeout(() => inputRef.current?.focus(), 30);
-      return () => clearTimeout(t);
-    }
+    if (!open) return;
+    const t = setTimeout(() => inputRef.current?.focus(), 30);
+    return () => clearTimeout(t);
   }, [open]);
 
   const items = useMemo<Item[]>(() => {
@@ -97,9 +94,8 @@ export function CommandPalette({
     return Array.from(g.entries());
   }, [items]);
 
-  useEffect(() => {
-    if (sel >= items.length) setSel(Math.max(0, items.length - 1));
-  }, [items.length, sel]);
+  // Clamp selection to current item count (derived; avoids setState-in-effect).
+  const clampedSel = items.length === 0 ? 0 : Math.min(sel, items.length - 1);
 
   const flatIds = items.map((i) => i.id);
 
@@ -112,7 +108,7 @@ export function CommandPalette({
       setSel((s) => Math.max(0, s - 1));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      const it = items[sel];
+      const it = items[clampedSel];
       if (it) {
         it.run();
         onClose();
@@ -201,7 +197,7 @@ export function CommandPalette({
               </div>
               {list.map((it) => {
                 const idx = flatIds.indexOf(it.id);
-                const active = idx === sel;
+                const active = idx === clampedSel;
                 return (
                   <button
                     key={it.id}

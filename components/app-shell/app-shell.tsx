@@ -118,13 +118,15 @@ export function AppShell({ children, problems, avatarInitials = "?" }: AppShellP
       <div style={{ flex: 1, minHeight: 0, display: "flex", position: "relative" }}>
         {children}
       </div>
-      <CommandPalette
-        open={paletteOpen}
-        onClose={closePalette}
-        problems={problems}
-        onToggleCoach={onToggleCoach}
-        onToggleAnalysis={onToggleAnalysis}
-      />
+      {paletteOpen && (
+        <CommandPalette
+          open={paletteOpen}
+          onClose={closePalette}
+          problems={problems}
+          onToggleCoach={onToggleCoach}
+          onToggleAnalysis={onToggleAnalysis}
+        />
+      )}
       <Cheatsheet open={cheatsheetOpen} onClose={closeCheatsheet} />
       <ToastHost />
     </div>

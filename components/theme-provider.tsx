@@ -4,9 +4,8 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 
@@ -22,40 +21,34 @@ const STORAGE_KEY = "lcn-theme";
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-function readInitialTheme(): Theme {
-  if (typeof window === "undefined") return "light";
-  try {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored === "light" || stored === "dark") return stored;
-  } catch {
-    /* ignore */
-  }
-  if (
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(prefers-color-scheme: dark)").matches
-  ) {
-    return "dark";
-  }
+function readDocTheme(): Theme {
+  if (typeof document === "undefined") return "light";
+  const v = document.documentElement.dataset.theme;
+  return v === "dark" ? "dark" : "light";
+}
+
+function subscribeTheme(notify: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  const obs = new MutationObserver(() => notify());
+  obs.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["data-theme"],
+  });
+  return () => obs.disconnect();
+}
+
+function getServerTheme(): Theme {
   return "light";
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("light");
-
-  // Sync with whatever the inline pre-paint script set (or fall back to detection).
-  useEffect(() => {
-    const current = document.documentElement.dataset.theme;
-    if (current === "light" || current === "dark") {
-      setThemeState(current);
-    } else {
-      const initial = readInitialTheme();
-      document.documentElement.dataset.theme = initial;
-      setThemeState(initial);
-    }
-  }, []);
+  const theme = useSyncExternalStore(
+    subscribeTheme,
+    readDocTheme,
+    getServerTheme,
+  );
 
   const setTheme = useCallback((next: Theme) => {
-    setThemeState(next);
     if (typeof document !== "undefined") {
       document.documentElement.dataset.theme = next;
     }
@@ -67,8 +60,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const toggleTheme = useCallback(() => {
-    setTheme(theme === "dark" ? "light" : "dark");
-  }, [theme, setTheme]);
+    setTheme(readDocTheme() === "dark" ? "light" : "dark");
+  }, [setTheme]);
 
   const value = useMemo<ThemeContextValue>(
     () => ({ theme, setTheme, toggleTheme }),
