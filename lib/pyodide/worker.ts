@@ -23,7 +23,9 @@ async function init() {
     self.importScripts(`${PYODIDE_CDN}pyodide.js`);
     self.pyodide = await self.loadPyodide!({ indexURL: PYODIDE_CDN });
     if (!harnessSource) {
-      const res = await fetch("/api/harness");
+      const res = await fetch(`/api/harness?t=${Date.now()}`, {
+        cache: "no-store",
+      });
       harnessSource = await res.text();
     }
     await self.pyodide.runPythonAsync(harnessSource);
