@@ -18,7 +18,7 @@ describe("getDb", () => {
     expect(tables).toContain("users");
     expect(tables).toContain("problems");
     expect(tables).toContain("attempts");
-    const cols = db.prepare("PRAGMA table_info(problems)").all().map((r: { name: string }) => r.name);
+    const cols = (db.prepare("PRAGMA table_info(problems)").all() as { name: string }[]).map((r) => r.name);
     expect(cols).toContain("method_name");
     db.close();
   });
