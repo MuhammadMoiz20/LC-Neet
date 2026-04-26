@@ -1,42 +1,61 @@
 "use client";
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import type { Analysis, AnalysisKind } from "@/lib/analysis/repo";
+import type { Analysis } from "@/lib/analysis/repo";
+import { Icon } from "@/components/ui";
+import {
+  AnalysisContent,
+  AnalysisHeroPill,
+} from "@/components/analysis/analysis-content";
 
-const KIND_LABELS: Record<AnalysisKind, string> = {
-  quality: "Code Quality",
-  complexity: "Complexity",
-  comparison: "Comparison to Optimal",
-  pattern: "Pattern",
-  mistake: "Mistake Detection",
-  interview_debrief: "Interview Debrief",
-};
-const KIND_ORDER: AnalysisKind[] = [
-  "quality",
-  "complexity",
-  "comparison",
-  "pattern",
-  "mistake",
-  "interview_debrief",
-];
+type AttemptStatus = "passed" | "failed" | "error";
+
+function timeAgo(epochSec: number): string {
+  const now = Date.now() / 1000;
+  const diff = Math.max(0, now - epochSec);
+  if (diff < 60) return `${Math.floor(diff)}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
+function statusToVerdict(s: AttemptStatus): "Accepted" | "Wrong" | "Error" {
+  return s === "passed" ? "Accepted" : s === "error" ? "Error" : "Wrong";
+}
 
 export function AnalysisView({
   attemptId,
+  problemId,
+  problemSlug,
+  problemTitle,
+  attemptStatus,
+  runtimeMs,
+  createdAt,
   initial,
-}: { attemptId: number; initial: Analysis[] }) {
+}: {
+  attemptId: number;
+  problemId: number;
+  problemSlug: string;
+  problemTitle: string;
+  attemptStatus: AttemptStatus;
+  runtimeMs: number | null;
+  createdAt: number;
+  initial: Analysis[];
+}) {
   const [rows, setRows] = useState<Analysis[]>(initial);
 
-  const expectedCount = rows.some((r) => r.kind === "interview_debrief")
-    ? KIND_ORDER.length
-    : KIND_ORDER.length - 1;
+  const showInterviewDebrief = rows.some((r) => r.kind === "interview_debrief");
+  const expectedKinds = showInterviewDebrief ? 6 : 5;
   const incomplete =
-    rows.length < expectedCount || rows.some((r) => r.status === "pending");
+    rows.length < expectedKinds || rows.some((r) => r.status === "pending");
 
   useEffect(() => {
     if (!incomplete) return;
     const t = setInterval(async () => {
       try {
-        const res = await fetch(`/api/analysis/${attemptId}`, { cache: "no-store" });
+        const res = await fetch(`/api/analysis/${attemptId}`, {
+          cache: "no-store",
+        });
         if (!res.ok) return;
         const data = (await res.json()) as { rows: Analysis[] };
         setRows(data.rows);
@@ -45,42 +64,148 @@ export function AnalysisView({
     return () => clearInterval(t);
   }, [attemptId, incomplete]);
 
-  const byKind = new Map(rows.map((r) => [r.kind, r] as const));
+  const verdict = statusToVerdict(attemptStatus);
 
   return (
-    <div className="space-y-6">
-      {KIND_ORDER.map((kind) => {
-        if (kind === "interview_debrief" && !byKind.has("interview_debrief")) {
-          return null;
-        }
-        const row = byKind.get(kind);
-        const status = row?.status ?? "pending";
-        return (
-          <section key={kind} className="border border-zinc-800 rounded p-4">
-            <header className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-semibold">{KIND_LABELS[kind]}</h2>
-              <StatusPill status={status} />
-            </header>
-            {status === "pending" ? (
-              <p className="text-sm text-zinc-500 italic">Analysis in progress…</p>
-            ) : (
-              <div className="text-sm space-y-2">
-                <ReactMarkdown>{row?.content_md ?? ""}</ReactMarkdown>
+    <main
+      style={{
+        flex: 1,
+        overflow: "auto",
+        padding: "24px 32px 40px",
+      }}
+    >
+      <div style={{ maxWidth: 880, margin: "0 auto" }}>
+        <Link
+          href="/"
+          className="row mono"
+          style={{
+            gap: 6,
+            fontSize: 12,
+            color: "var(--text-muted)",
+            textDecoration: "none",
+            marginBottom: 14,
+          }}
+        >
+          <Icon name="chevron-l" size={12} /> Dashboard
+        </Link>
+        <div
+          className="row"
+          style={{ alignItems: "flex-end", marginBottom: 18, gap: 12 }}
+        >
+          <div className="col" style={{ gap: 6 }}>
+            <span className="row" style={{ gap: 6 }}>
+              <AnalysisHeroPill verdict={verdict} />
+              <span className="mono muted" style={{ fontSize: 11.5 }}>
+                a-{attemptId} · {timeAgo(createdAt)}
+                {runtimeMs != null && ` · ${runtimeMs}ms`}
+              </span>
+            </span>
+            <h1
+              style={{
+                margin: 0,
+                fontSize: 28,
+                fontWeight: 600,
+                letterSpacing: "-.015em",
+              }}
+            >
+              {problemTitle}
+            </h1>
+          </div>
+          <div style={{ flex: 1 }} />
+          <Link
+            href={`/problem/${problemSlug}`}
+            className="btn btn-sm row"
+            style={{ gap: 6 }}
+          >
+            Open in workspace <Icon name="arrow-r" size={11} />
+          </Link>
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1.1fr .9fr",
+            gap: 18,
+          }}
+        >
+          <div className="col" style={{ gap: 18 }}>
+            <div className="glass" style={{ padding: 22, borderRadius: 12 }}>
+              <AnalysisContent
+                rows={rows}
+                showInterviewDebrief={showInterviewDebrief}
+              />
+            </div>
+          </div>
+          <div className="col" style={{ gap: 18 }}>
+            <div className="glass" style={{ padding: 22, borderRadius: 12 }}>
+              <h3
+                style={{
+                  margin: "0 0 12px",
+                  fontSize: 12,
+                  color: "var(--text-faint)",
+                  textTransform: "uppercase",
+                  letterSpacing: ".08em",
+                  fontWeight: 600,
+                }}
+              >
+                Metrics
+              </h3>
+              <div className="col" style={{ gap: 10 }}>
+                <MetricRow label="Verdict" value={verdict} />
+                <MetricRow
+                  label="Runtime"
+                  value={runtimeMs != null ? `${runtimeMs}ms` : "—"}
+                />
+                <MetricRow label="Attempt" value={`#${attemptId}`} />
               </div>
-            )}
-          </section>
-        );
-      })}
-    </div>
+            </div>
+            <div className="glass" style={{ padding: 22, borderRadius: 12 }}>
+              <h3
+                style={{
+                  margin: "0 0 12px",
+                  fontSize: 12,
+                  color: "var(--text-faint)",
+                  textTransform: "uppercase",
+                  letterSpacing: ".08em",
+                  fontWeight: 600,
+                }}
+              >
+                Next steps
+              </h3>
+              <div className="col" style={{ gap: 6 }}>
+                <Link
+                  href={`/problem/${problemSlug}`}
+                  className="row btn btn-sm"
+                  style={{ justifyContent: "space-between" }}
+                >
+                  <span>Re-open workspace</span>
+                  <Icon name="arrow-r" size={12} />
+                </Link>
+                <Link
+                  href={`/problems?problemId=${problemId}`}
+                  className="row btn btn-sm btn-ghost"
+                  style={{ justifyContent: "space-between" }}
+                >
+                  <span>Browse similar problems</span>
+                  <Icon name="arrow-r" size={12} />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
   );
 }
 
-function StatusPill({ status }: { status: string }) {
-  const cls =
-    status === "done" ? "bg-emerald-900/40 text-emerald-300"
-    : status === "error" ? "bg-red-900/40 text-red-300"
-    : "bg-zinc-800 text-zinc-300 animate-pulse";
+function MetricRow({ label, value }: { label: string; value: string }) {
   return (
-    <span className={`text-xs px-2 py-0.5 rounded ${cls}`}>{status}</span>
+    <div
+      className="row"
+      style={{ justifyContent: "space-between", fontSize: 13 }}
+    >
+      <span className="muted">{label}</span>
+      <span className="mono">{value}</span>
+    </div>
   );
 }

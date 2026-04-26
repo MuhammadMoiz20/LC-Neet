@@ -8,13 +8,13 @@ export default async function ProblemPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ mode?: string; duration?: string }>;
+  searchParams: Promise<{ mode?: string; duration?: string; focus?: string }>;
 }) {
   const { slug } = await params;
   const sp = await searchParams;
   const problem = getProblemBySlug(getDb(), slug);
   if (!problem) notFound();
-  const interviewMode = sp.mode === "interview";
+  const interviewMode = sp.mode === "interview" || sp.focus === "1";
   const interviewDurationMin = Number(sp.duration ?? "30");
   return (
     <ProblemWorkspace

@@ -40,3 +40,27 @@ export function listAttempts(
     )
     .all(userId, problemId) as Attempt[];
 }
+
+export type AttemptSummary = {
+  id: number;
+  status: AttemptStatus;
+  created_at: number;
+  runtime_ms: number | null;
+};
+
+export function listAttemptsByProblem(
+  db: Database.Database,
+  userId: number,
+  problemId: number,
+  limit = 10,
+): AttemptSummary[] {
+  return db
+    .prepare(
+      `SELECT id, status, created_at, runtime_ms
+       FROM attempts
+       WHERE user_id = ? AND problem_id = ?
+       ORDER BY created_at DESC
+       LIMIT ?`,
+    )
+    .all(userId, problemId, limit) as AttemptSummary[];
+}
