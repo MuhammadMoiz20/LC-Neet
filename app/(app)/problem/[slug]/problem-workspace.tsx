@@ -4,7 +4,8 @@ import type { Problem } from "@/lib/problems/types";
 import { CodeEditor } from "@/components/code-editor";
 import { usePyodideRunner } from "@/lib/pyodide/use-pyodide-runner";
 import type { RunResult } from "@/lib/pyodide/worker-protocol";
-import { submitAttempt } from "./actions";
+import { submitAttempt, getMyAttempts } from "./actions";
+import { SubmissionsTab } from "@/components/workspace/submissions-tab";
 import { CoachPanel } from "@/components/coach-panel";
 import { Icon, IconButton, toast } from "@/components/ui";
 import { PromptRail } from "@/components/workspace/prompt-rail";
@@ -69,6 +70,7 @@ export function ProblemWorkspace({
     null,
   );
   const [analysisOpen, setAnalysisOpen] = useState(false);
+  const [submissionsRefreshKey, setSubmissionsRefreshKey] = useState(0);
   const { status: pyStatus, run, errorMsg } = usePyodideRunner();
 
   // Interview timer (preserved)
@@ -133,6 +135,7 @@ export function ProblemWorkspace({
           runtimeMs: totalMs,
           mode: interviewMode ? "interview" : mode,
         });
+        setSubmissionsRefreshKey((k) => k + 1);
         if (allPassed && !interviewMode) {
           fetch(`/api/analysis/${attemptId}`, { method: "POST" }).catch(
             () => {},
@@ -282,6 +285,18 @@ export function ProblemWorkspace({
                 {"\n\n"}
                 <span className="tok-com"># run with ⌘↵</span>
               </pre>
+            )}
+            {tab === "submissions" && (
+              <div style={{ position: "absolute", inset: 0 }}>
+                <SubmissionsTab
+                  fetchAttempts={() => getMyAttempts(problem.id)}
+                  refreshKey={submissionsRefreshKey}
+                  onRestore={(c) => {
+                    setCode(c);
+                    setTab("sol");
+                  }}
+                />
+              </div>
             )}
             {tab === "notes" && (
               <textarea
