@@ -12,6 +12,7 @@ type AttemptCtx = {
   user_id: number;
   problem_id: number;
   code: string;
+  mode: string | null;
   title: string;
   topic: string;
   difficulty: string;
@@ -25,7 +26,7 @@ function loadCtx(
 ): AttemptCtx | undefined {
   return db
     .prepare(
-      `SELECT a.id, a.user_id, a.problem_id, a.code,
+      `SELECT a.id, a.user_id, a.problem_id, a.code, a.mode,
               p.title, p.topic, p.difficulty, p.description_md
        FROM attempts a JOIN problems p ON p.id = a.problem_id
        WHERE a.id = ? AND a.user_id = ?`,
@@ -75,6 +76,7 @@ export async function POST(
     problemTopic: ctx.topic,
     problemDifficulty: ctx.difficulty,
     problemDescription: ctx.description_md,
+    mode: ctx.mode ?? undefined,
   });
 
   return Response.json({ rows: getByAttempt(db, id) });

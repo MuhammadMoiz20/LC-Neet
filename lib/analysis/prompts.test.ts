@@ -8,6 +8,7 @@ const ALL_KINDS: AnalysisKind[] = [
   "comparison",
   "pattern",
   "mistake",
+  "interview_debrief",
 ];
 
 describe("analysisPrompt", () => {
@@ -39,6 +40,12 @@ describe("analysisPrompt", () => {
     const p = analysisPrompt("mistake");
     expect(p).toContain("Category:");
     expect(p.toLowerCase()).toMatch(/start|begin|first line/);
+  });
+
+  it("interview_debrief mentions interview/candidate/verdict", () => {
+    const p = analysisPrompt("interview_debrief");
+    const lower = p.toLowerCase();
+    expect(lower).toMatch(/interview|candidate|verdict/);
   });
 
   it("every kind embeds the NO_SOLUTION_RULE", () => {

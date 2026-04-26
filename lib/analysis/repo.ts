@@ -1,6 +1,12 @@
 import type Database from "better-sqlite3";
 
-export type AnalysisKind = "quality" | "complexity" | "comparison" | "pattern" | "mistake";
+export type AnalysisKind =
+  | "quality"
+  | "complexity"
+  | "comparison"
+  | "pattern"
+  | "mistake"
+  | "interview_debrief";
 export type AnalysisStatus = "pending" | "done" | "error";
 
 export type Analysis = {
@@ -25,7 +31,14 @@ export type PatternCounter = {
   solved_count: number;
 };
 
-const KIND_ORDER: AnalysisKind[] = ["quality", "complexity", "comparison", "pattern", "mistake"];
+const KIND_ORDER: AnalysisKind[] = [
+  "quality",
+  "complexity",
+  "comparison",
+  "pattern",
+  "mistake",
+  "interview_debrief",
+];
 
 export function upsertAnalysis(
   db: Database.Database,

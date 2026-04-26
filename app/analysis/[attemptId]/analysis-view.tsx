@@ -9,8 +9,16 @@ const KIND_LABELS: Record<AnalysisKind, string> = {
   comparison: "Comparison to Optimal",
   pattern: "Pattern",
   mistake: "Mistake Detection",
+  interview_debrief: "Interview Debrief",
 };
-const KIND_ORDER: AnalysisKind[] = ["quality", "complexity", "comparison", "pattern", "mistake"];
+const KIND_ORDER: AnalysisKind[] = [
+  "quality",
+  "complexity",
+  "comparison",
+  "pattern",
+  "mistake",
+  "interview_debrief",
+];
 
 export function AnalysisView({
   attemptId,
@@ -18,8 +26,11 @@ export function AnalysisView({
 }: { attemptId: number; initial: Analysis[] }) {
   const [rows, setRows] = useState<Analysis[]>(initial);
 
+  const expectedCount = rows.some((r) => r.kind === "interview_debrief")
+    ? KIND_ORDER.length
+    : KIND_ORDER.length - 1;
   const incomplete =
-    rows.length < KIND_ORDER.length || rows.some((r) => r.status === "pending");
+    rows.length < expectedCount || rows.some((r) => r.status === "pending");
 
   useEffect(() => {
     if (!incomplete) return;
@@ -39,6 +50,9 @@ export function AnalysisView({
   return (
     <div className="space-y-6">
       {KIND_ORDER.map((kind) => {
+        if (kind === "interview_debrief" && !byKind.has("interview_debrief")) {
+          return null;
+        }
         const row = byKind.get(kind);
         const status = row?.status ?? "pending";
         return (

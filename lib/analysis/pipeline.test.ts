@@ -162,6 +162,23 @@ describe("analysis/pipeline", () => {
     expect(mistakes[0].problem_id).toBe(ctx.problemId);
   });
 
+  it("interview mode runs 6 kinds and persists 6 rows", async () => {
+    const { db, ctx } = await setup();
+    vi.mocked(runOne).mockImplementation(async ({ kind }) => ({
+      kind,
+      content_md: `body for ${kind}`,
+      status: "done" as const,
+    }));
+
+    await runPipeline(db, { ...ctx, mode: "interview" });
+
+    const rows = getByAttempt(db, ctx.attemptId);
+    expect(rows.length).toBe(6);
+    expect(rows.map((r) => r.kind)).toEqual([...KINDS, "interview_debrief"]);
+    expect(rows.every((r) => r.status === "done")).toBe(true);
+    expect(vi.mocked(runOne)).toHaveBeenCalledTimes(6);
+  });
+
   it("Category: none does not record a mistake", async () => {
     const { db, ctx } = await setup();
     vi.mocked(runOne).mockImplementation(async ({ kind }) => {

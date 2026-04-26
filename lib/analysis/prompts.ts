@@ -68,6 +68,15 @@ first line MUST be exactly: Category: none
 ${NO_SOLUTION_RULE}
 `.trim();
 
+const INTERVIEW_DEBRIEF = `
+You are debriefing a mock-interview attempt. Summarize the candidate's
+process: their approach, communication clarity (inferred from coach chat
+history if you can see it), how they handled edge cases, and a brief verdict
+(would-hire / would-not-hire-yet / strong-hire) with one-line justification.
+Be honest but constructive. Keep total response ≤180 words.
+${NO_SOLUTION_RULE}
+`.trim();
+
 export function analysisPrompt(kind: AnalysisKind): string {
   switch (kind) {
     case "quality":
@@ -80,5 +89,7 @@ export function analysisPrompt(kind: AnalysisKind): string {
       return PATTERN;
     case "mistake":
       return MISTAKE;
+    case "interview_debrief":
+      return INTERVIEW_DEBRIEF;
   }
 }

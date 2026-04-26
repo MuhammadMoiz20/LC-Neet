@@ -46,7 +46,7 @@ CREATE INDEX IF NOT EXISTS chat_user_problem ON chat_messages(user_id, problem_i
 CREATE TABLE IF NOT EXISTS analyses (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   attempt_id INTEGER NOT NULL REFERENCES attempts(id),
-  kind TEXT NOT NULL CHECK(kind IN ('quality','complexity','comparison','pattern','mistake')),
+  kind TEXT NOT NULL CHECK(kind IN ('quality','complexity','comparison','pattern','mistake','interview_debrief')),
   content_md TEXT NOT NULL,
   status TEXT NOT NULL CHECK(status IN ('pending','done','error')),
   created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
@@ -146,6 +146,29 @@ export function getDb(filePath = "data/app.db"): Database.Database {
         SELECT id, user_id, problem_id, role, content, mode, created_at FROM chat_messages_old;
       DROP TABLE chat_messages_old;
       CREATE INDEX IF NOT EXISTS chat_user_problem ON chat_messages(user_id, problem_id, created_at);
+      COMMIT;
+    `);
+  }
+  const analysesKindCheck = db.prepare(
+    `SELECT sql FROM sqlite_master WHERE type='table' AND name='analyses'`,
+  ).get() as { sql: string } | undefined;
+  if (analysesKindCheck && !analysesKindCheck.sql.includes("'interview_debrief'")) {
+    db.exec(`
+      BEGIN;
+      ALTER TABLE analyses RENAME TO analyses_old;
+      CREATE TABLE analyses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        attempt_id INTEGER NOT NULL REFERENCES attempts(id),
+        kind TEXT NOT NULL CHECK(kind IN ('quality','complexity','comparison','pattern','mistake','interview_debrief')),
+        content_md TEXT NOT NULL,
+        status TEXT NOT NULL CHECK(status IN ('pending','done','error')),
+        created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+        UNIQUE(attempt_id, kind)
+      );
+      INSERT INTO analyses (id, attempt_id, kind, content_md, status, created_at)
+        SELECT id, attempt_id, kind, content_md, status, created_at FROM analyses_old;
+      DROP TABLE analyses_old;
+      CREATE INDEX IF NOT EXISTS analyses_attempt ON analyses(attempt_id);
       COMMIT;
     `);
   }
