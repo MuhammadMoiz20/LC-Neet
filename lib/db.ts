@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS chat_messages (
   problem_id INTEGER NOT NULL REFERENCES problems(id),
   role TEXT NOT NULL CHECK(role IN ('user','assistant')),
   content TEXT NOT NULL,
-  mode TEXT NOT NULL CHECK(mode IN ('socratic','hints','style')),
+  mode TEXT NOT NULL CHECK(mode IN ('socratic','hints','style','interview')),
   created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
 );
 CREATE INDEX IF NOT EXISTS chat_user_problem ON chat_messages(user_id, problem_id, created_at);
@@ -117,6 +117,29 @@ export function getDb(filePath = "data/app.db"): Database.Database {
         role TEXT NOT NULL CHECK(role IN ('user','assistant')),
         content TEXT NOT NULL,
         mode TEXT NOT NULL CHECK(mode IN ('socratic','hints','style')),
+        created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
+      );
+      INSERT INTO chat_messages (id, user_id, problem_id, role, content, mode, created_at)
+        SELECT id, user_id, problem_id, role, content, mode, created_at FROM chat_messages_old;
+      DROP TABLE chat_messages_old;
+      CREATE INDEX IF NOT EXISTS chat_user_problem ON chat_messages(user_id, problem_id, created_at);
+      COMMIT;
+    `);
+  }
+  const chatModeCheck2 = db.prepare(
+    `SELECT sql FROM sqlite_master WHERE type='table' AND name='chat_messages'`,
+  ).get() as { sql: string } | undefined;
+  if (chatModeCheck2 && !chatModeCheck2.sql.includes("'interview'")) {
+    db.exec(`
+      BEGIN;
+      ALTER TABLE chat_messages RENAME TO chat_messages_old;
+      CREATE TABLE chat_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL REFERENCES users(id),
+        problem_id INTEGER NOT NULL REFERENCES problems(id),
+        role TEXT NOT NULL CHECK(role IN ('user','assistant')),
+        content TEXT NOT NULL,
+        mode TEXT NOT NULL CHECK(mode IN ('socratic','hints','style','interview')),
         created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
       );
       INSERT INTO chat_messages (id, user_id, problem_id, role, content, mode, created_at)

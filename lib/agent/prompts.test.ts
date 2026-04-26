@@ -9,4 +9,9 @@ describe("systemPrompt", () => {
     expect(systemPrompt("socratic").length).toBeGreaterThan(0);
     expect(systemPrompt("hints").length).toBeGreaterThan(0);
   });
+  test("interview mode mentions interviewer and forbids hints", () => {
+    const p = systemPrompt("interview");
+    expect(p).toMatch(/interviewer/i);
+    expect(p).toMatch(/NEVER/);
+  });
 });

@@ -1,8 +1,15 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 
-type Mode = "socratic" | "hints" | "style";
+type Mode = "socratic" | "hints" | "style" | "interview";
 type Msg = { role: "user" | "assistant"; content: string; mode: Mode };
+
+const MODE_LABELS: Record<Mode, string> = {
+  hints: "Hints",
+  socratic: "Socratic",
+  style: "Style",
+  interview: "Interview",
+};
 
 export function CoachPanel({
   problemId,
@@ -10,15 +17,17 @@ export function CoachPanel({
   lastRunOutput,
   open,
   onClose,
+  lockedMode,
 }: {
   problemId: number;
   code: string;
   lastRunOutput: string | null;
   open: boolean;
   onClose: () => void;
+  lockedMode?: Mode;
 }) {
   const [messages, setMessages] = useState<Msg[]>([]);
-  const [mode, setMode] = useState<Mode>("hints");
+  const [mode, setMode] = useState<Mode>(lockedMode ?? "hints");
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const sentRef = useRef(false);
@@ -47,10 +56,11 @@ export function CoachPanel({
   async function send() {
     const text = input.trim();
     if (!text || streaming) return;
+    const effectiveMode: Mode = lockedMode ?? mode;
     sentRef.current = true;
     setInput("");
-    setMessages((m) => [...m, { role: "user", content: text, mode }]);
-    setMessages((m) => [...m, { role: "assistant", content: "", mode }]);
+    setMessages((m) => [...m, { role: "user", content: text, mode: effectiveMode }]);
+    setMessages((m) => [...m, { role: "assistant", content: "", mode: effectiveMode }]);
     setStreaming(true);
     try {
       const res = await fetch("/api/coach", {
@@ -58,7 +68,7 @@ export function CoachPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           problemId,
-          mode,
+          mode: effectiveMode,
           userMessage: text,
           code,
           lastRunOutput,
@@ -103,15 +113,20 @@ export function CoachPanel({
       <header className="flex items-center justify-between p-3 border-b border-zinc-800">
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold">Coach</span>
-          <select
-            value={mode}
-            onChange={(e) => setMode(e.target.value as Mode)}
-            className="text-xs bg-zinc-900 border border-zinc-800 rounded px-2 py-1"
-          >
-            <option value="hints">Hints</option>
-            <option value="socratic">Socratic</option>
-            <option value="style">Style</option>
-          </select>
+          {lockedMode ? (
+            <span className="text-xs text-zinc-400">{MODE_LABELS[lockedMode]} mode</span>
+          ) : (
+            <select
+              value={mode}
+              onChange={(e) => setMode(e.target.value as Mode)}
+              className="text-xs bg-zinc-900 border border-zinc-800 rounded px-2 py-1"
+            >
+              <option value="hints">Hints</option>
+              <option value="socratic">Socratic</option>
+              <option value="style">Style</option>
+              <option value="interview">Interview</option>
+            </select>
+          )}
         </div>
         <button onClick={onClose} className="text-sm text-zinc-400 hover:text-zinc-100">
           Close
