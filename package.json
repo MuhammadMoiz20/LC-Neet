@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "seed": "tsx scripts/seed.ts",
+    "import:nc150": "tsx scripts/import-neetcode-150.ts",
     "e2e": "playwright test"
   },
   "dependencies": {
