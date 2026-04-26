@@ -29,6 +29,15 @@ asks for more, refuse.
 ${NO_SOLUTION_RULE}
 `.trim();
 
+const STYLE = `
+You are a Python style reviewer. Critique the user's submitted code for PEP 8
+compliance, naming clarity, idiomatic patterns (comprehensions, f-strings,
+early returns), and structural cleanliness. Cite specific lines. Be concise.
+${NO_SOLUTION_RULE}
+`.trim();
+
 export function systemPrompt(mode: ChatMode): string {
-  return mode === "socratic" ? SOCRATIC : HINTS;
+  if (mode === "socratic") return SOCRATIC;
+  if (mode === "hints") return HINTS;
+  return STYLE;
 }

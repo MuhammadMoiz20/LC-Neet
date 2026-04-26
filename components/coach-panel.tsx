@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 
-type Mode = "socratic" | "hints";
+type Mode = "socratic" | "hints" | "style";
 type Msg = { role: "user" | "assistant"; content: string; mode: Mode };
 
 export function CoachPanel({
@@ -110,6 +110,7 @@ export function CoachPanel({
           >
             <option value="hints">Hints</option>
             <option value="socratic">Socratic</option>
+            <option value="style">Style</option>
           </select>
         </div>
         <button onClick={onClose} className="text-sm text-zinc-400 hover:text-zinc-100">

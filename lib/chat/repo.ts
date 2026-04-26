@@ -1,7 +1,7 @@
 import type Database from "better-sqlite3";
 
 export type ChatRole = "user" | "assistant";
-export type ChatMode = "socratic" | "hints";
+export type ChatMode = "socratic" | "hints" | "style";
 
 export type ChatMessage = {
   id: number;
