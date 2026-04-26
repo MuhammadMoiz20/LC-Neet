@@ -65,4 +65,28 @@ describe("submitAttempt SR enqueue", () => {
     });
     expect(getReviewState(getDb(), userId, 1)).toBeNull();
   });
+
+  test("accepted submission marks today's daily complete when problems match", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const db = getDb();
+    db.prepare(`INSERT INTO daily (user_id, date, problem_id) VALUES (?, ?, ?)`)
+      .run(userId, today, 1);
+    const { submitAttempt } = await import("./actions");
+    await submitAttempt({ problemId: 1, code: "ok", status: "passed", runtimeMs: 1, mode: "run" });
+    const row = db.prepare(`SELECT completed FROM daily WHERE user_id = ? AND date = ?`)
+      .get(userId, today) as { completed: number };
+    expect(row.completed).toBe(1);
+  });
+
+  test("daily not flipped when accepted problem differs from today's daily", async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const db = getDb();
+    db.prepare(`INSERT INTO daily (user_id, date, problem_id) VALUES (?, ?, ?)`)
+      .run(userId, today, 2);
+    const { submitAttempt } = await import("./actions");
+    await submitAttempt({ problemId: 1, code: "ok", status: "passed", runtimeMs: 1, mode: "run" });
+    const row = db.prepare(`SELECT completed FROM daily WHERE user_id = ? AND date = ?`)
+      .get(userId, today) as { completed: number };
+    expect(row.completed).toBe(0);
+  });
 });

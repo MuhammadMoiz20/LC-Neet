@@ -5,6 +5,7 @@ import { recordAttempt, listAttempts, type AttemptStatus } from "@/lib/attempts/
 import { upsertReview, getReviewState } from "@/lib/sr/repo";
 import { nextReview, gradeFromAttempt } from "@/lib/sr/sm2";
 import { listMessages } from "@/lib/chat/repo";
+import { getDaily, markDailyComplete } from "@/lib/daily/repo";
 
 export async function submitAttempt(input: {
   problemId: number;
@@ -48,6 +49,12 @@ export async function submitAttempt(input: {
       ease: nr.ease,
       interval_days: nr.intervalDays,
     });
+
+    const today = new Date().toISOString().slice(0, 10);
+    const daily = getDaily(db, userId, today);
+    if (daily && daily.problem_id === input.problemId && !daily.completed) {
+      markDailyComplete(db, userId, today);
+    }
   }
 
   return attemptId;
