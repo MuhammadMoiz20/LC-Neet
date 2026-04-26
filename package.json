@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "seed": "tsx scripts/seed.ts",
+    "import:nc150": "tsx scripts/import-neetcode-150.ts",
     "e2e": "playwright test"
   },
   "dependencies": {
@@ -32,12 +33,15 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/turndown": "^5.0.6",
     "@vitest/ui": "^4.1.5",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
     "happy-dom": "^20.9.0",
+    "node-html-parser": "^7.1.0",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
+    "turndown": "^7.2.4",
     "typescript": "^5",
     "vitest": "^4.1.5"
   },

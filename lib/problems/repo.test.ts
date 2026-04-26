@@ -16,19 +16,18 @@ describe("problems/repo", () => {
 
   it("listProblems returns all seeded problems", () => {
     const all = listProblems(getDb(TEST_DB));
-    expect(all.length).toBe(3);
-    expect(all.map((p) => p.slug).sort()).toEqual([
-      "contains-duplicate",
-      "two-sum",
-      "valid-anagram",
-    ]);
+    expect(all.length).toBe(150);
+    const slugs = new Set(all.map((p) => p.slug));
+    expect(slugs.has("two-sum")).toBe(true);
+    expect(slugs.has("valid-anagram")).toBe(true);
+    expect(slugs.has("contains-duplicate")).toBe(true);
   });
 
   it("getProblemBySlug returns hydrated problem with parsed test_cases", () => {
     const p = getProblemBySlug(getDb(TEST_DB), "two-sum");
     expect(p).not.toBeNull();
     expect(p!.method_name).toBe("twoSum");
-    expect(p!.test_cases.length).toBe(2);
+    expect(p!.test_cases.length).toBeGreaterThanOrEqual(2);
   });
 
   it("getProblemBySlug returns null for unknown slug", () => {

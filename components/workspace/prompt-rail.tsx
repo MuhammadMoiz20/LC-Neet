@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import type { Problem } from "@/lib/problems/types";
 import { IconButton, Pill } from "@/components/ui";
 import { topicToPatternId, getPatternName } from "@/lib/patterns/groups";
+import { YouTubeEmbed } from "@/components/problems/youtube-embed";
 
 type PillKind = "easy" | "med" | "hard";
 function difficultyKind(d: Problem["difficulty"]): PillKind {
@@ -157,6 +158,7 @@ export function PromptRail({
             {problem.description_md}
           </ReactMarkdown>
         </div>
+        <YouTubeEmbed url={problem.neetcode_video_url} />
       </div>
     </aside>
   );
