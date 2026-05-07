@@ -20,7 +20,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   pages: { signIn: "/login" },
-  session: { strategy: "jwt" },
+  session: { strategy: "jwt", maxAge: 60 * 60 * 24 * 60 },
+  jwt: { maxAge: 60 * 60 * 24 * 60 },
   callbacks: {
     jwt({ token, user }) {
       if (user) token.uid = user.id;

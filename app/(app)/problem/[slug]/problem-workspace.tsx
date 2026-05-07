@@ -71,7 +71,7 @@ export function ProblemWorkspace({
   );
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [submissionsRefreshKey, setSubmissionsRefreshKey] = useState(0);
-  const { status: pyStatus, run, errorMsg } = usePyodideRunner();
+  const { status: pyStatus, run, cancel, errorMsg } = usePyodideRunner();
 
   // Interview timer (preserved)
   const [endsAt] = useState(() =>
@@ -148,7 +148,11 @@ export function ProblemWorkspace({
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : "run failed";
-        toast(msg, { kind: "error" });
+        if (msg === "cancelled") {
+          toast("Execution stopped", { kind: "info" });
+        } else {
+          toast(msg, { kind: "error" });
+        }
       } finally {
         setRunning(false);
       }
@@ -232,6 +236,7 @@ export function ProblemWorkspace({
         <WorkspaceTabs tab={tab} onTab={setTab} />
         <EditorToolbar
           onRun={() => performRun("run")}
+          onStop={() => cancel()}
           onSubmit={() => performRun("submit")}
           onReset={() => setCode(problem.starter_code)}
           running={running}

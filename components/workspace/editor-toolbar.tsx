@@ -5,6 +5,7 @@ export type EditorLang = "Python 3" | "JavaScript" | "TypeScript" | "Go" | "Rust
 
 export function EditorToolbar({
   onRun,
+  onStop,
   onSubmit,
   onReset,
   running,
@@ -17,6 +18,7 @@ export function EditorToolbar({
   hideSubmitInIv,
 }: {
   onRun: () => void;
+  onStop: () => void;
   onSubmit: () => void;
   onReset: () => void;
   running: boolean;
@@ -83,16 +85,28 @@ export function EditorToolbar({
       <Button size="sm" icon="reset" kind="ghost" onClick={onReset}>
         Reset
       </Button>
-      <Button
-        size="sm"
-        icon="play"
-        onClick={onRun}
-        disabled={running || !pythonReady}
-      >
-        {running ? "Running…" : !pythonReady ? "Loading Python…" : "Run"}{" "}
-        <Kbd>⌘</Kbd>
-        <Kbd>↵</Kbd>
-      </Button>
+      {running ? (
+        <Button
+          size="sm"
+          onClick={onStop}
+          style={{
+            color: "var(--rose)",
+            borderColor: "var(--rose)",
+          }}
+        >
+          Stop
+        </Button>
+      ) : (
+        <Button
+          size="sm"
+          icon="play"
+          onClick={onRun}
+          disabled={!pythonReady}
+        >
+          {!pythonReady ? "Loading Python…" : "Run"} <Kbd>⌘</Kbd>
+          <Kbd>↵</Kbd>
+        </Button>
+      )}
       {!hideSubmitInIv && (
         <Button size="sm" kind="primary" onClick={onSubmit} disabled={running || !pythonReady}>
           Submit <Kbd>⇧⌘</Kbd>

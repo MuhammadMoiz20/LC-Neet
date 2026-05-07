@@ -16,6 +16,25 @@ Output: [0,1]</pre>`;
 });
 
 describe("parseExamples", () => {
+  it("strips LeetCode markdown bracket escapes (\\[ \\]) before JSON parsing", () => {
+    const md = `**Example 1:**\n\n**Input:** nums = \\[1,2,3,1\\]\n\n**Output:** true\n\n**Example 2:**\n\n**Input:** nums = \\[1,2,3,4\\]\n\n**Output:** false\n\nConstraints:`;
+    const cases = parseExamples(md, ["nums"]);
+    expect(cases).toEqual([
+      { input: { nums: [1, 2, 3, 1] }, expected: true },
+      { input: { nums: [1, 2, 3, 4] }, expected: false },
+    ]);
+  });
+
+  it("handles bracket-escaped string values like Valid Parentheses", () => {
+    const md = `**Example 1:**\n\n**Input:** s = "()"\n\n**Output:** true\n\n**Example 2:**\n\n**Input:** s = "()\\[\\]{}"\n\n**Output:** true\n\n**Example 3:**\n\n**Input:** s = "(\\])"\n\n**Output:** false\n\nConstraints:`;
+    const cases = parseExamples(md, ["s"]);
+    expect(cases).toEqual([
+      { input: { s: "()" }, expected: true },
+      { input: { s: "()[]{}" }, expected: true },
+      { input: { s: "(])" }, expected: false },
+    ]);
+  });
+
   it("extracts {input, expected} pairs from rendered example blocks", () => {
     const md = `Some text.
 

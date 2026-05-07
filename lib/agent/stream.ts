@@ -93,6 +93,7 @@ export async function* streamCoach(
   const it = query({
     prompt: fullPrompt,
     options: {
+      model: "claude-haiku-4-5",
       systemPrompt: systemPrompt(input.mode),
       mcpServers: { lcneet: mcpServer },
       allowedTools: [

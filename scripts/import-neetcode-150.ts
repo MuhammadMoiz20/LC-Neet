@@ -35,9 +35,13 @@ export function htmlToMarkdown(html: string): string {
 /**
  * Best-effort JSON coercion: tolerate single-quoted strings and fall back to
  * the raw trimmed string if `JSON.parse` cannot make sense of the value.
+ *
+ * LeetCode's HTML→Markdown pipeline escapes square brackets as `\[` and `\]`
+ * so they don't get parsed as Markdown link syntax. Those escapes are not
+ * valid JSON, so strip them first before attempting to parse.
  */
-function coerceValue(raw: string): unknown {
-  const trimmed = raw.trim();
+export function coerceValue(raw: string): unknown {
+  const trimmed = raw.trim().replace(/\\\[/g, "[").replace(/\\\]/g, "]");
   if (trimmed === "") return "";
   try {
     return JSON.parse(trimmed);

@@ -36,6 +36,7 @@ Provide the analysis described in your system prompt.`;
     for await (const m of query({
       prompt: userPrompt,
       options: {
+        model: "claude-sonnet-4-6",
         systemPrompt: analysisPrompt(input.kind),
         maxTurns: 1,
       },

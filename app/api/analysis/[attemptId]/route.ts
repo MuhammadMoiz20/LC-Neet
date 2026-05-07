@@ -52,7 +52,7 @@ export async function GET(
 }
 
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ attemptId: string }> },
 ) {
   const userId = await requireUserId();
@@ -67,17 +67,23 @@ export async function POST(
     return new Response("not found", { status: 404 });
   }
 
-  void runPipeline(db, {
-    attemptId: id,
-    userId,
-    problemId: ctx.problem_id,
-    code: ctx.code,
-    problemTitle: ctx.title,
-    problemTopic: ctx.topic,
-    problemDifficulty: ctx.difficulty,
-    problemDescription: ctx.description_md,
-    mode: ctx.mode ?? undefined,
-  });
+  const force = req.nextUrl.searchParams.get("force") === "1";
+
+  void runPipeline(
+    db,
+    {
+      attemptId: id,
+      userId,
+      problemId: ctx.problem_id,
+      code: ctx.code,
+      problemTitle: ctx.title,
+      problemTopic: ctx.topic,
+      problemDifficulty: ctx.difficulty,
+      problemDescription: ctx.description_md,
+      mode: ctx.mode ?? undefined,
+    },
+    { force },
+  );
 
   return Response.json({ rows: getByAttempt(db, id) });
 }

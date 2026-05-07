@@ -160,7 +160,28 @@ def _run_one(solution, method_name, case):
     try:
         method = getattr(solution, method_name)
         raw_input = case["input"]
-        kwargs = {k: _convert_input(k, v) for k, v in raw_input.items()}
+        # `pos` is a LeetCode test-data convention for linked-list cycles:
+        # it indicates the index the tail's `next` connects to. It is never
+        # a function parameter, so consume it here to splice the cycle.
+        pos = raw_input.get("pos") if isinstance(raw_input, dict) else None
+        kwargs = {
+            k: _convert_input(k, v) for k, v in raw_input.items() if k != "pos"
+        }
+        if pos is not None and isinstance(pos, int) and pos >= 0:
+            for list_key in _LIST_INPUT_NAMES:
+                head = kwargs.get(list_key)
+                if head is None or not isinstance(head, ListNode):
+                    continue
+                target = head
+                for _ in range(pos):
+                    if target.next is None:
+                        break
+                    target = target.next
+                tail = head
+                while tail.next is not None:
+                    tail = tail.next
+                tail.next = target
+                break
         # If any input had a linked-list/tree-shaped name, we assume the
         # return value is the same kind. This lets `None` (empty list/tree)
         # compare equal to LeetCode's `[]` serialization.
