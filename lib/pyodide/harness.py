@@ -183,14 +183,18 @@ def _run_one(solution, method_name, case):
                 tail.next = target
                 break
         # If any input had a linked-list/tree-shaped name, we assume the
-        # return value is the same kind. This lets `None` (empty list/tree)
-        # compare equal to LeetCode's `[]` serialization.
-        returns_list = any(
-            k in _LIST_INPUT_NAMES or k == "lists" for k in raw_input
-        )
-        returns_tree = any(k in _TREE_INPUT_NAMES for k in raw_input)
+        # return value is the same kind. When the user method returns
+        # `None` (in-place mutation problems like `reorderList`), serialize
+        # the mutated input instead — this also covers empty-list cases
+        # since `_from_list_node(None)` returns `[]`.
+        list_key = next((k for k in raw_input if k in _LIST_INPUT_NAMES), None)
+        tree_key = next((k for k in raw_input if k in _TREE_INPUT_NAMES), None)
         raw_actual = method(**kwargs)
-        if raw_actual is None and (returns_list or returns_tree):
+        if raw_actual is None and list_key is not None:
+            actual = _from_list_node(kwargs[list_key])
+        elif raw_actual is None and tree_key is not None:
+            actual = _from_tree_node(kwargs[tree_key])
+        elif raw_actual is None and any(k == "lists" for k in raw_input):
             actual = []
         else:
             actual = _convert_output(raw_actual)
