@@ -126,6 +126,13 @@ export function ProblemWorkspace({
         if (r.compile_error) {
           return;
         }
+        // Run is local-only: execute tests in Pyodide, show the verdict,
+        // but don't persist an attempt or kick off analysis. Submissions
+        // (and every action in interview mode, since interviews record the
+        // full transcript) still go through the persisted path below.
+        if (mode === "run" && !interviewMode) {
+          return;
+        }
         const allPassed = r.results.every((c) => c.passed);
         const totalMs = r.results.reduce((s, c) => s + c.elapsed_ms, 0);
         const attemptId = await submitAttempt({
@@ -142,9 +149,7 @@ export function ProblemWorkspace({
           );
           setAnalysisAttemptId(attemptId);
           setSubmitted(true);
-          if (mode === "submit") {
-            toast("Submission accepted — analysis ready", { kind: "success" });
-          }
+          toast("Submission accepted — analysis ready", { kind: "success" });
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : "run failed";

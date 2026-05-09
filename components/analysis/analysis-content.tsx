@@ -1,6 +1,6 @@
 "use client";
 import ReactMarkdown from "react-markdown";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type { Analysis, AnalysisKind } from "@/lib/analysis/repo";
 import { Section, type SectionTone } from "@/components/workspace/section";
 import { Icon, type IconName } from "@/components/ui";
@@ -50,6 +50,128 @@ const SECTIONS: SectionSpec[] = [
     tone: "accent",
   },
 ];
+
+type ParsedComplexity = {
+  body: string;
+  submitted: { time: string; space: string };
+  optimal: { time: string; space: string };
+};
+
+function parseComplexity(md: string): ParsedComplexity | null {
+  const re =
+    /^([\s\S]*?)\n+Final:\s*O\(([^)]+)\)\s*time,\s*O\(([^)]+)\)\s*space\s*\n+Optimal:\s*O\(([^)]+)\)\s*time,\s*O\(([^)]+)\)\s*space\s*$/;
+  const m = md.trim().match(re);
+  if (!m) return null;
+  return {
+    body: m[1].trim(),
+    submitted: { time: m[2].trim(), space: m[3].trim() },
+    optimal: { time: m[4].trim(), space: m[5].trim() },
+  };
+}
+
+function ComplexityCompare({
+  submitted,
+  optimal,
+}: Omit<ParsedComplexity, "body">) {
+  const timeMatch = submitted.time === optimal.time;
+  const spaceMatch = submitted.space === optimal.space;
+  const allMatch = timeMatch && spaceMatch;
+  const labelStyle: CSSProperties = {
+    fontSize: 11,
+    fontWeight: 600,
+    color: "var(--text-muted)",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  };
+  const rowLabel: CSSProperties = {
+    fontSize: 12,
+    color: "var(--text-muted)",
+  };
+  const cellBase: CSSProperties = {
+    fontSize: 13,
+    padding: "2px 8px",
+    borderRadius: 4,
+    background: "var(--bg-2)",
+    display: "inline-block",
+  };
+  const submittedCell = (matches: boolean): CSSProperties => ({
+    ...cellBase,
+    color: matches ? "var(--text)" : "var(--rose)",
+    border: matches ? "1px solid var(--border)" : "1px solid var(--rose)",
+  });
+  const optimalCell: CSSProperties = {
+    ...cellBase,
+    color: "var(--accent)",
+    border: "1px solid var(--accent)",
+  };
+  return (
+    <div
+      style={{
+        marginTop: 12,
+        padding: "10px 12px",
+        background: "var(--bg-1)",
+        border: "1px solid var(--border)",
+        borderRadius: 8,
+      }}
+    >
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "auto 1fr 1fr",
+          rowGap: 6,
+          columnGap: 16,
+          alignItems: "center",
+        }}
+      >
+        <span />
+        <span style={labelStyle}>Submitted</span>
+        <span style={labelStyle}>Optimal</span>
+        <span style={rowLabel}>Time</span>
+        <code className="mono" style={submittedCell(timeMatch)}>
+          O({submitted.time})
+        </code>
+        <code className="mono" style={optimalCell}>
+          O({optimal.time})
+        </code>
+        <span style={rowLabel}>Space</span>
+        <code className="mono" style={submittedCell(spaceMatch)}>
+          O({submitted.space})
+        </code>
+        <code className="mono" style={optimalCell}>
+          O({optimal.space})
+        </code>
+      </div>
+      <p
+        style={{
+          margin: "10px 0 0",
+          fontSize: 12,
+          color: allMatch ? "var(--accent)" : "var(--text-muted)",
+        }}
+      >
+        {allMatch
+          ? "Already at the optimal bound."
+          : !timeMatch && !spaceMatch
+            ? "Both time and space can be tightened."
+            : !timeMatch
+              ? "Time can be improved."
+              : "Space can be improved."}
+      </p>
+    </div>
+  );
+}
+
+function ComplexityBody({ md }: { md: string }) {
+  const parsed = parseComplexity(md);
+  if (!parsed) {
+    return <MdBody md={md} />;
+  }
+  return (
+    <>
+      {parsed.body && <MdBody md={parsed.body} />}
+      <ComplexityCompare submitted={parsed.submitted} optimal={parsed.optimal} />
+    </>
+  );
+}
 
 function MdBody({ md }: { md: string }) {
   return (
@@ -167,13 +289,17 @@ export function AnalysisContent({
                 Analysis failed.
               </p>
             ) : row && row.content_md.trim() ? (
-              <MdBody
-                md={
-                  spec.kind === "grade"
-                    ? row.content_md.replace(/^Grade:\s*\d+\s*\n?/, "").trim()
-                    : row.content_md
-                }
-              />
+              spec.kind === "complexity" ? (
+                <ComplexityBody md={row.content_md} />
+              ) : (
+                <MdBody
+                  md={
+                    spec.kind === "grade"
+                      ? row.content_md.replace(/^Grade:\s*\d+\s*\n?/, "").trim()
+                      : row.content_md
+                  }
+                />
+              )
             ) : (
               spec.fallback ?? (
                 <p className="muted" style={{ margin: 0, fontSize: 12.5 }}>
