@@ -152,6 +152,36 @@ _USER_NS_INJECT = {
 }
 
 
+def _canonical_unordered(value):
+    # Recursively canonicalize a list-of-lists / list-of-strings into a sorted
+    # tuple so unordered outputs can be compared. Returns None if the value
+    # isn't a shape we want to compare order-independently.
+    if not isinstance(value, list):
+        return None
+    if not value:
+        return ()
+    if all(isinstance(v, list) for v in value):
+        inner = []
+        for v in value:
+            if not all(isinstance(x, (int, float, str, bool)) or x is None for x in v):
+                return None
+            inner.append(tuple(v))
+        return tuple(sorted(inner, key=lambda t: (len(t), [repr(x) for x in t])))
+    if all(isinstance(v, str) for v in value):
+        return tuple(sorted(value))
+    return None
+
+
+def _equals_allowing_unordered(actual, expected):
+    if actual == expected:
+        return True
+    a = _canonical_unordered(actual)
+    e = _canonical_unordered(expected)
+    if a is None or e is None:
+        return False
+    return a == e
+
+
 def _run_one(solution, method_name, case):
     buf = io.StringIO()
     real_stdout = sys.stdout
@@ -199,7 +229,7 @@ def _run_one(solution, method_name, case):
         else:
             actual = _convert_output(raw_actual)
         elapsed_ms = int((time.perf_counter() - start) * 1000)
-        passed = actual == case["expected"]
+        passed = _equals_allowing_unordered(actual, case["expected"])
         return {
             "passed": passed,
             "actual": actual,
