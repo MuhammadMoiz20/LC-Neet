@@ -17,6 +17,7 @@ common typing imports, and helpers, so starter code referencing
 """
 
 import io
+import inspect
 import json
 import sys
 import time
@@ -243,10 +244,27 @@ def _run_one(solution, method_name, case):
         list_key = next((k for k in raw_input if k in _LIST_INPUT_NAMES), None)
         tree_key = next((k for k in raw_input if k in _TREE_INPUT_NAMES), None)
         raw_actual = method(**kwargs)
-        if raw_actual is None and list_key is not None:
+        # Distinguish "method returns a new head/root" from "in-place mutation
+        # returning None" via the return annotation. If the user's signature
+        # promises a ListNode/TreeNode (or Optional thereof), trust their
+        # explicit return — None then means an empty list/tree. Only fall back
+        # to serializing the mutated input when the method is annotated to
+        # return None, or has no annotation we can read.
+        try:
+            return_ann = inspect.signature(method).return_annotation
+        except (TypeError, ValueError):
+            return_ann = inspect.Signature.empty
+        ann_str = "" if return_ann is inspect.Signature.empty else str(return_ann)
+        returns_list_node = "ListNode" in ann_str
+        returns_tree_node = "TreeNode" in ann_str
+        if raw_actual is None and list_key is not None and not returns_list_node:
             actual = _from_list_node(kwargs[list_key])
-        elif raw_actual is None and tree_key is not None:
+        elif raw_actual is None and tree_key is not None and not returns_tree_node:
             actual = _from_tree_node(kwargs[tree_key])
+        elif raw_actual is None and list_key is not None and returns_list_node:
+            actual = []
+        elif raw_actual is None and tree_key is not None and returns_tree_node:
+            actual = []
         elif raw_actual is None and any(k == "lists" for k in raw_input):
             actual = []
         else:
