@@ -94,6 +94,27 @@ export function PromptRail({
         <div className="row" style={{ gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
           <Pill kind={difficultyKind(problem.difficulty)}>{problem.difficulty}</Pill>
           <Pill>{problem.topic}</Pill>
+          <a
+            href={`https://leetcode.com/problems/${problem.slug}/`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Open on LeetCode"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              padding: "2px 8px",
+              fontSize: 11.5,
+              fontWeight: 500,
+              color: "var(--text-muted)",
+              border: "1px solid var(--border)",
+              borderRadius: 999,
+              textDecoration: "none",
+              background: "var(--bg-2)",
+            }}
+          >
+            LeetCode ↗
+          </a>
         </div>
         <h1
           style={{
