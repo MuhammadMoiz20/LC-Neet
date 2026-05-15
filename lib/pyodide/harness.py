@@ -123,10 +123,14 @@ def _convert_input(name, value):
     return value
 
 
-def _convert_output(actual):
+def _convert_output(actual, expected=None):
     if isinstance(actual, ListNode):
         return _from_list_node(actual)
     if isinstance(actual, TreeNode):
+        # Problems like Lowest Common Ancestor return a TreeNode but the
+        # expected output is just the node's value.
+        if isinstance(expected, (int, float, str)):
+            return actual.val
         return _from_tree_node(actual)
     return actual
 
@@ -227,7 +231,7 @@ def _run_one(solution, method_name, case):
         elif raw_actual is None and any(k == "lists" for k in raw_input):
             actual = []
         else:
-            actual = _convert_output(raw_actual)
+            actual = _convert_output(raw_actual, case["expected"])
         elapsed_ms = int((time.perf_counter() - start) * 1000)
         passed = _equals_allowing_unordered(actual, case["expected"])
         return {
