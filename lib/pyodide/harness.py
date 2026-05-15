@@ -201,6 +201,25 @@ def _run_one(solution, method_name, case):
         kwargs = {
             k: _convert_input(k, v) for k, v in raw_input.items() if k != "pos"
         }
+        # LeetCode LCA-style problems: `p` and `q` are passed as scalar
+        # values referencing nodes already present in `root`. Resolve them
+        # to the actual TreeNode in the constructed tree.
+        root_tree = kwargs.get("root") if isinstance(kwargs.get("root"), TreeNode) else None
+        if root_tree is not None:
+            node_by_val = {}
+            stack = [root_tree]
+            while stack:
+                n = stack.pop()
+                if n is None:
+                    continue
+                node_by_val[n.val] = n
+                stack.append(n.left)
+                stack.append(n.right)
+            for key in ("p", "q"):
+                if key in kwargs and not isinstance(kwargs[key], TreeNode):
+                    v = kwargs[key]
+                    if v in node_by_val:
+                        kwargs[key] = node_by_val[v]
         if pos is not None and isinstance(pos, int) and pos >= 0:
             for list_key in _LIST_INPUT_NAMES:
                 head = kwargs.get(list_key)
