@@ -78,6 +78,20 @@ export default async function Home() {
   const daily = getOrCreateDaily(db, userId, today, () =>
     pickDaily(db, userId, today, now),
   );
+  // If today's daily was assigned a problem the user has since solved, swap
+  // in a fresh unsolved pick so the hero never points at finished work.
+  if (solved.has(daily.problem_id)) {
+    const newPid = pickDaily(db, userId, today, now);
+    if (newPid !== daily.problem_id && !solved.has(newPid)) {
+      db.prepare(
+        `UPDATE daily SET problem_id = ?, completed = 0 WHERE user_id = ? AND date = ?`,
+      ).run(newPid, userId, today);
+      daily.problem_id = newPid;
+      daily.completed = 0;
+    } else {
+      daily.completed = 1;
+    }
+  }
   const dailyProblem = problems.find((p) => p.id === daily.problem_id);
   const due = dueReviews(db, userId, now, 5);
 

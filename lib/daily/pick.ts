@@ -9,12 +9,13 @@ function hashSeed(userId: number, date: string): number {
 }
 
 export function pickDaily(db: Database.Database, userId: number, dateISO: string, now: number): number {
-  const due = dueReviews(db, userId, now, 50);
   const seed = hashSeed(userId, dateISO);
-  if (due.length > 0) return due[seed % due.length].problem_id;
   const solved = getSolvedProblemIds(db, userId);
   const all = db.prepare(`SELECT id FROM problems ORDER BY id`).all() as { id: number }[];
   const unsolved = all.filter((r) => !solved.has(r.id));
-  const pool = unsolved.length > 0 ? unsolved : all;
-  return pool[seed % pool.length].id;
+  if (unsolved.length > 0) return unsolved[seed % unsolved.length].id;
+  // Everything solved — fall back to a due review, then to anything.
+  const due = dueReviews(db, userId, now, 50);
+  if (due.length > 0) return due[seed % due.length].problem_id;
+  return all[seed % all.length].id;
 }
