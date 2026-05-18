@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
+  CustomResult,
   RunResult,
   WorkerRequest,
   WorkerResponse,
@@ -97,5 +98,29 @@ export function usePyodideRunner() {
     [],
   );
 
-  return { status, errorMsg, run, cancel };
+  const runCustom = useCallback(
+    (code: string, inputJson: string, methodName: string) =>
+      new Promise<CustomResult>((resolve, reject) => {
+        const w = workerRef.current;
+        if (!w) return reject(new Error("Worker not ready"));
+        const id = randomId();
+        pendingRef.current.set(id, (resp) => {
+          if (resp.type === "customResult") resolve(resp.result);
+          else if (resp.type === "error") reject(new Error(resp.error));
+        });
+        setStatus("running");
+        w.postMessage({
+          id,
+          type: "runCustom",
+          code,
+          inputJson,
+          methodName,
+        } satisfies WorkerRequest);
+      }).finally(() => {
+        if (workerRef.current) setStatus("ready");
+      }),
+    [],
+  );
+
+  return { status, errorMsg, run, runCustom, cancel };
 }
