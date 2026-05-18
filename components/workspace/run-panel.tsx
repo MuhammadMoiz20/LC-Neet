@@ -38,6 +38,13 @@ export function buildOutputLines(
         kind: "fail",
         text: `✗ test ${i + 1} (${c.elapsed_ms}ms)`,
       });
+    }
+    if (c.stdout) {
+      for (const s of c.stdout.replace(/\n$/, "").split("\n")) {
+        lines.push({ kind: "info", text: `   ${s}` });
+      }
+    }
+    if (!c.passed) {
       lines.push({
         kind: "info",
         text: `   expected: ${JSON.stringify(c.expected)}`,
