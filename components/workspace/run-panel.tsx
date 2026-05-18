@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Icon, Kbd, Pill } from "@/components/ui";
 import type { CustomResult, RunResult } from "@/lib/pyodide/worker-protocol";
 
@@ -248,6 +248,14 @@ function CustomInputSection({
   const [open, setOpen] = useState(false);
   const [text, setText] = useState(defaultValue);
   const [parseError, setParseError] = useState<string | null>(null);
+  const lastDefaultRef = useRef(defaultValue);
+  useEffect(() => {
+    if (defaultValue !== lastDefaultRef.current) {
+      setText(defaultValue);
+      setParseError(null);
+      lastDefaultRef.current = defaultValue;
+    }
+  }, [defaultValue]);
 
   const handleRun = () => {
     try {

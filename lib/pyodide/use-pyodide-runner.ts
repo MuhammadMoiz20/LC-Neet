@@ -18,6 +18,7 @@ export function usePyodideRunner() {
   const pendingRef = useRef<
     Map<string, (r: WorkerResponse) => void>
   >(new Map());
+  const inFlightRef = useRef(0);
   const [status, setStatus] = useState<Status>("loading");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -70,6 +71,7 @@ export function usePyodideRunner() {
     }
     pendingRef.current.clear();
     workerRef.current = null;
+    inFlightRef.current = 0;
     spawn();
   }, [spawn]);
 
@@ -83,6 +85,7 @@ export function usePyodideRunner() {
           if (resp.type === "result") resolve(resp.result);
           else if (resp.type === "error") reject(new Error(resp.error));
         });
+        inFlightRef.current += 1;
         setStatus("running");
         w.postMessage({
           id,
@@ -92,8 +95,9 @@ export function usePyodideRunner() {
           methodName,
         } satisfies WorkerRequest);
       }).finally(() => {
+        inFlightRef.current = Math.max(0, inFlightRef.current - 1);
         // Only flip to ready if the worker is still alive (not cancelled).
-        if (workerRef.current) setStatus("ready");
+        if (workerRef.current && inFlightRef.current === 0) setStatus("ready");
       }),
     [],
   );
@@ -108,6 +112,7 @@ export function usePyodideRunner() {
           if (resp.type === "customResult") resolve(resp.result);
           else if (resp.type === "error") reject(new Error(resp.error));
         });
+        inFlightRef.current += 1;
         setStatus("running");
         w.postMessage({
           id,
@@ -117,7 +122,8 @@ export function usePyodideRunner() {
           methodName,
         } satisfies WorkerRequest);
       }).finally(() => {
-        if (workerRef.current) setStatus("ready");
+        inFlightRef.current = Math.max(0, inFlightRef.current - 1);
+        if (workerRef.current && inFlightRef.current === 0) setStatus("ready");
       }),
     [],
   );

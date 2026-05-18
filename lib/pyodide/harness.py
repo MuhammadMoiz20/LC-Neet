@@ -350,7 +350,24 @@ def run_tests(user_code: str, test_cases_json: str, method_name: str) -> str:
 
 def run_custom(user_code: str, input_json: str, method_name: str) -> str:
     """Entry point for a single ad-hoc run with no expected output."""
-    raw_input = json.loads(input_json)
+    try:
+        raw_input = json.loads(input_json)
+    except Exception as e:
+        return json.dumps({
+            "compile_error": None,
+            "actual": None,
+            "stdout": "",
+            "elapsed_ms": 0,
+            "error": f"Invalid JSON: {e}",
+        })
+    if not isinstance(raw_input, dict):
+        return json.dumps({
+            "compile_error": None,
+            "actual": None,
+            "stdout": "",
+            "elapsed_ms": 0,
+            "error": "Custom input must be a JSON object of kwargs, e.g. {\"nums\":[1,2],\"target\":3}.",
+        })
     mod = types.ModuleType("user_solution")
     mod.__dict__.update(_USER_NS_INJECT)
     try:
