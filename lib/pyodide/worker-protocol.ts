@@ -6,6 +6,13 @@ export type WorkerRequest =
       code: string;
       testCasesJson: string;
       methodName: string;
+    }
+  | {
+      id: string;
+      type: "runCustom";
+      code: string;
+      inputJson: string;
+      methodName: string;
     };
 
 export type TestResult = {
@@ -22,7 +29,16 @@ export type RunResult = {
   results: TestResult[];
 };
 
+export type CustomResult = {
+  compile_error: string | null;
+  actual: unknown;
+  stdout: string;
+  elapsed_ms: number;
+  error: string | null;
+};
+
 export type WorkerResponse =
   | { id: string; type: "ready" }
   | { id: string; type: "result"; result: RunResult }
+  | { id: string; type: "customResult"; result: CustomResult }
   | { id: string; type: "error"; error: string };

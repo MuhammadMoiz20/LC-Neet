@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
+  CustomResult,
   RunResult,
   WorkerRequest,
   WorkerResponse,
@@ -17,6 +18,7 @@ export function usePyodideRunner() {
   const pendingRef = useRef<
     Map<string, (r: WorkerResponse) => void>
   >(new Map());
+  const inFlightRef = useRef(0);
   const [status, setStatus] = useState<Status>("loading");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -69,6 +71,7 @@ export function usePyodideRunner() {
     }
     pendingRef.current.clear();
     workerRef.current = null;
+    inFlightRef.current = 0;
     spawn();
   }, [spawn]);
 
@@ -82,6 +85,7 @@ export function usePyodideRunner() {
           if (resp.type === "result") resolve(resp.result);
           else if (resp.type === "error") reject(new Error(resp.error));
         });
+        inFlightRef.current += 1;
         setStatus("running");
         w.postMessage({
           id,
@@ -91,11 +95,38 @@ export function usePyodideRunner() {
           methodName,
         } satisfies WorkerRequest);
       }).finally(() => {
+        inFlightRef.current = Math.max(0, inFlightRef.current - 1);
         // Only flip to ready if the worker is still alive (not cancelled).
-        if (workerRef.current) setStatus("ready");
+        if (workerRef.current && inFlightRef.current === 0) setStatus("ready");
       }),
     [],
   );
 
-  return { status, errorMsg, run, cancel };
+  const runCustom = useCallback(
+    (code: string, inputJson: string, methodName: string) =>
+      new Promise<CustomResult>((resolve, reject) => {
+        const w = workerRef.current;
+        if (!w) return reject(new Error("Worker not ready"));
+        const id = randomId();
+        pendingRef.current.set(id, (resp) => {
+          if (resp.type === "customResult") resolve(resp.result);
+          else if (resp.type === "error") reject(new Error(resp.error));
+        });
+        inFlightRef.current += 1;
+        setStatus("running");
+        w.postMessage({
+          id,
+          type: "runCustom",
+          code,
+          inputJson,
+          methodName,
+        } satisfies WorkerRequest);
+      }).finally(() => {
+        inFlightRef.current = Math.max(0, inFlightRef.current - 1);
+        if (workerRef.current && inFlightRef.current === 0) setStatus("ready");
+      }),
+    [],
+  );
+
+  return { status, errorMsg, run, runCustom, cancel };
 }

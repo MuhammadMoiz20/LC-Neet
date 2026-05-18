@@ -187,6 +187,77 @@ def _equals_allowing_unordered(actual, expected):
     return a == e
 
 
+def _prepare_kwargs(method, raw_input):
+    """Build the kwargs dict to pass to `method`, applying the LeetCode
+    conventions (`pos` cycle splice, LCA `p`/`q` resolution against `root`).
+
+    Returns: (kwargs, list_key, tree_key) — `list_key`/`tree_key` are the
+    first input key that conventionally holds a linked-list head or tree
+    root, used by callers to decide how to serialize the return value.
+    """
+    pos = raw_input.get("pos") if isinstance(raw_input, dict) else None
+    kwargs = {
+        k: _convert_input(k, v) for k, v in raw_input.items() if k != "pos"
+    }
+    root_tree = kwargs.get("root") if isinstance(kwargs.get("root"), TreeNode) else None
+    if root_tree is not None:
+        node_by_val = {}
+        stack = [root_tree]
+        while stack:
+            n = stack.pop()
+            if n is None:
+                continue
+            node_by_val[n.val] = n
+            stack.append(n.left)
+            stack.append(n.right)
+        for key in ("p", "q"):
+            if key in kwargs and not isinstance(kwargs[key], TreeNode):
+                v = kwargs[key]
+                if v in node_by_val:
+                    kwargs[key] = node_by_val[v]
+    if pos is not None and isinstance(pos, int) and pos >= 0:
+        for list_key in _LIST_INPUT_NAMES:
+            head = kwargs.get(list_key)
+            if head is None or not isinstance(head, ListNode):
+                continue
+            target = head
+            for _ in range(pos):
+                if target.next is None:
+                    break
+                target = target.next
+            tail = head
+            while tail.next is not None:
+                tail = tail.next
+            tail.next = target
+            break
+    list_key = next((k for k in raw_input if k in _LIST_INPUT_NAMES), None)
+    tree_key = next((k for k in raw_input if k in _TREE_INPUT_NAMES), None)
+    return kwargs, list_key, tree_key
+
+
+def _serialize_actual(raw_actual, method, kwargs, raw_input, list_key, tree_key, expected):
+    """Apply the same return-value serialization `_run_one` uses, so a
+    custom run (with no `expected`) produces output shaped the same way."""
+    try:
+        return_ann = inspect.signature(method).return_annotation
+    except (TypeError, ValueError):
+        return_ann = inspect.Signature.empty
+    ann_str = "" if return_ann is inspect.Signature.empty else str(return_ann)
+    returns_list_node = "ListNode" in ann_str
+    returns_tree_node = "TreeNode" in ann_str
+    if raw_actual is None and list_key is not None and not returns_list_node:
+        return _from_list_node(kwargs[list_key])
+    if raw_actual is None and tree_key is not None and not returns_tree_node:
+        return _from_tree_node(kwargs[tree_key])
+    if raw_actual is None and list_key is not None and returns_list_node:
+        return []
+    if raw_actual is None and tree_key is not None and returns_tree_node:
+        return []
+    if raw_actual is None and any(k == "lists" for k in raw_input):
+        return []
+    return _convert_output(raw_actual, expected)
+
+
 def _run_one(solution, method_name, case):
     buf = io.StringIO()
     real_stdout = sys.stdout
@@ -195,80 +266,11 @@ def _run_one(solution, method_name, case):
     try:
         method = getattr(solution, method_name)
         raw_input = case["input"]
-        # `pos` is a LeetCode test-data convention for linked-list cycles:
-        # it indicates the index the tail's `next` connects to. It is never
-        # a function parameter, so consume it here to splice the cycle.
-        pos = raw_input.get("pos") if isinstance(raw_input, dict) else None
-        kwargs = {
-            k: _convert_input(k, v) for k, v in raw_input.items() if k != "pos"
-        }
-        # LeetCode LCA-style problems: `p` and `q` are passed as scalar
-        # values referencing nodes already present in `root`. Resolve them
-        # to the actual TreeNode in the constructed tree.
-        root_tree = kwargs.get("root") if isinstance(kwargs.get("root"), TreeNode) else None
-        if root_tree is not None:
-            node_by_val = {}
-            stack = [root_tree]
-            while stack:
-                n = stack.pop()
-                if n is None:
-                    continue
-                node_by_val[n.val] = n
-                stack.append(n.left)
-                stack.append(n.right)
-            for key in ("p", "q"):
-                if key in kwargs and not isinstance(kwargs[key], TreeNode):
-                    v = kwargs[key]
-                    if v in node_by_val:
-                        kwargs[key] = node_by_val[v]
-        if pos is not None and isinstance(pos, int) and pos >= 0:
-            for list_key in _LIST_INPUT_NAMES:
-                head = kwargs.get(list_key)
-                if head is None or not isinstance(head, ListNode):
-                    continue
-                target = head
-                for _ in range(pos):
-                    if target.next is None:
-                        break
-                    target = target.next
-                tail = head
-                while tail.next is not None:
-                    tail = tail.next
-                tail.next = target
-                break
-        # If any input had a linked-list/tree-shaped name, we assume the
-        # return value is the same kind. When the user method returns
-        # `None` (in-place mutation problems like `reorderList`), serialize
-        # the mutated input instead — this also covers empty-list cases
-        # since `_from_list_node(None)` returns `[]`.
-        list_key = next((k for k in raw_input if k in _LIST_INPUT_NAMES), None)
-        tree_key = next((k for k in raw_input if k in _TREE_INPUT_NAMES), None)
+        kwargs, list_key, tree_key = _prepare_kwargs(method, raw_input)
         raw_actual = method(**kwargs)
-        # Distinguish "method returns a new head/root" from "in-place mutation
-        # returning None" via the return annotation. If the user's signature
-        # promises a ListNode/TreeNode (or Optional thereof), trust their
-        # explicit return — None then means an empty list/tree. Only fall back
-        # to serializing the mutated input when the method is annotated to
-        # return None, or has no annotation we can read.
-        try:
-            return_ann = inspect.signature(method).return_annotation
-        except (TypeError, ValueError):
-            return_ann = inspect.Signature.empty
-        ann_str = "" if return_ann is inspect.Signature.empty else str(return_ann)
-        returns_list_node = "ListNode" in ann_str
-        returns_tree_node = "TreeNode" in ann_str
-        if raw_actual is None and list_key is not None and not returns_list_node:
-            actual = _from_list_node(kwargs[list_key])
-        elif raw_actual is None and tree_key is not None and not returns_tree_node:
-            actual = _from_tree_node(kwargs[tree_key])
-        elif raw_actual is None and list_key is not None and returns_list_node:
-            actual = []
-        elif raw_actual is None and tree_key is not None and returns_tree_node:
-            actual = []
-        elif raw_actual is None and any(k == "lists" for k in raw_input):
-            actual = []
-        else:
-            actual = _convert_output(raw_actual, case["expected"])
+        actual = _serialize_actual(
+            raw_actual, method, kwargs, raw_input, list_key, tree_key, case["expected"]
+        )
         elapsed_ms = int((time.perf_counter() - start) * 1000)
         passed = _equals_allowing_unordered(actual, case["expected"])
         return {
@@ -285,6 +287,37 @@ def _run_one(solution, method_name, case):
             "passed": False,
             "actual": None,
             "expected": case["expected"],
+            "stdout": buf.getvalue(),
+            "elapsed_ms": elapsed_ms,
+            "error": traceback.format_exc(),
+        }
+    finally:
+        sys.stdout = real_stdout
+
+
+def _run_custom(solution, method_name, raw_input):
+    buf = io.StringIO()
+    real_stdout = sys.stdout
+    sys.stdout = buf
+    start = time.perf_counter()
+    try:
+        method = getattr(solution, method_name)
+        kwargs, list_key, tree_key = _prepare_kwargs(method, raw_input)
+        raw_actual = method(**kwargs)
+        actual = _serialize_actual(
+            raw_actual, method, kwargs, raw_input, list_key, tree_key, None
+        )
+        elapsed_ms = int((time.perf_counter() - start) * 1000)
+        return {
+            "actual": actual,
+            "stdout": buf.getvalue(),
+            "elapsed_ms": elapsed_ms,
+            "error": None,
+        }
+    except Exception:
+        elapsed_ms = int((time.perf_counter() - start) * 1000)
+        return {
+            "actual": None,
             "stdout": buf.getvalue(),
             "elapsed_ms": elapsed_ms,
             "error": traceback.format_exc(),
@@ -313,3 +346,48 @@ def run_tests(user_code: str, test_cases_json: str, method_name: str) -> str:
     solution = mod.Solution()
     results = [_run_one(solution, method_name, c) for c in cases]
     return json.dumps({"compile_error": None, "results": results})
+
+
+def run_custom(user_code: str, input_json: str, method_name: str) -> str:
+    """Entry point for a single ad-hoc run with no expected output."""
+    try:
+        raw_input = json.loads(input_json)
+    except Exception as e:
+        return json.dumps({
+            "compile_error": None,
+            "actual": None,
+            "stdout": "",
+            "elapsed_ms": 0,
+            "error": f"Invalid JSON: {e}",
+        })
+    if not isinstance(raw_input, dict):
+        return json.dumps({
+            "compile_error": None,
+            "actual": None,
+            "stdout": "",
+            "elapsed_ms": 0,
+            "error": "Custom input must be a JSON object of kwargs, e.g. {\"nums\":[1,2],\"target\":3}.",
+        })
+    mod = types.ModuleType("user_solution")
+    mod.__dict__.update(_USER_NS_INJECT)
+    try:
+        exec(user_code, mod.__dict__)
+    except Exception:
+        return json.dumps({
+            "compile_error": traceback.format_exc(),
+            "actual": None,
+            "stdout": "",
+            "elapsed_ms": 0,
+            "error": None,
+        })
+    if "Solution" not in mod.__dict__:
+        return json.dumps({
+            "compile_error": "Your code must define a `Solution` class.",
+            "actual": None,
+            "stdout": "",
+            "elapsed_ms": 0,
+            "error": None,
+        })
+    solution = mod.Solution()
+    result = _run_custom(solution, method_name, raw_input)
+    return json.dumps({"compile_error": None, **result})

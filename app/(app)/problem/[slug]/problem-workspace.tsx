@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Problem } from "@/lib/problems/types";
 import { CodeEditor } from "@/components/code-editor";
 import { usePyodideRunner } from "@/lib/pyodide/use-pyodide-runner";
-import type { RunResult } from "@/lib/pyodide/worker-protocol";
+import type { CustomResult, RunResult } from "@/lib/pyodide/worker-protocol";
 import { submitAttempt, getMyAttempts } from "./actions";
 import { SubmissionsTab } from "@/components/workspace/submissions-tab";
 import { CoachPanel } from "@/components/coach-panel";
@@ -62,6 +62,8 @@ export function ProblemWorkspace({
   const [tab, setTab] = useState<WorkspaceTabId>("sol");
   const [lang, setLang] = useState<EditorLang>("Python 3");
   const [result, setResult] = useState<RunResult | null>(null);
+  const [customResult, setCustomResult] = useState<CustomResult | null>(null);
+  const [customRunning, setCustomRunning] = useState(false);
   const [running, setRunning] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [promptCollapsed, setPromptCollapsed] = useState(false);
@@ -71,7 +73,7 @@ export function ProblemWorkspace({
   );
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [submissionsRefreshKey, setSubmissionsRefreshKey] = useState(0);
-  const { status: pyStatus, run, cancel, errorMsg } = usePyodideRunner();
+  const { status: pyStatus, run, runCustom, cancel, errorMsg } = usePyodideRunner();
 
   // Interview timer (preserved)
   const [endsAt] = useState(() =>
@@ -172,6 +174,24 @@ export function ProblemWorkspace({
       pyStatus,
       running,
     ],
+  );
+
+  const performCustomRun = useCallback(
+    async (inputJson: string) => {
+      if (customRunning) return;
+      if (pyStatus !== "ready" && pyStatus !== "running") return;
+      setCustomRunning(true);
+      try {
+        const r = await runCustom(code, inputJson, problem.method_name);
+        setCustomResult(r);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "run failed";
+        if (msg !== "cancelled") toast(msg, { kind: "error" });
+      } finally {
+        setCustomRunning(false);
+      }
+    },
+    [code, problem.method_name, runCustom, pyStatus, customRunning],
   );
 
   // Auto-submit on timer expiry (preserve previous behavior)
@@ -340,8 +360,12 @@ export function ProblemWorkspace({
             verdict={interviewMode ? (verdict ? "Accepted" : null) : verdict}
             runtimeMs={totalRuntimeMs}
             running={running}
-            onClear={() => setResult(null)}
+            onClear={() => { setResult(null); setCustomResult(null); }}
             hideStats={interviewMode}
+            customInputDefault={JSON.stringify(problem.test_cases[0]?.input ?? {}, null, 2)}
+            customResult={customResult}
+            customRunning={customRunning}
+            onRunCustom={performCustomRun}
           />
         </div>
         {errorMsg && (
