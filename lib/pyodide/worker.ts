@@ -69,6 +69,25 @@ self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
         result: JSON.parse(String(raw)),
       });
     }
+    if (msg.type === "runCustom") {
+      await init();
+      const py = self.pyodide!;
+      const setGlobal = (py.globals as unknown as {
+        set: (k: string, v: unknown) => void;
+      }).set;
+      setGlobal("__user_code", msg.code);
+      setGlobal("__input_json", msg.inputJson);
+      setGlobal("__method_name", msg.methodName);
+      const raw = await py.runPythonAsync(
+        "run_custom(__user_code, __input_json, __method_name)",
+      );
+      post({
+        id: msg.id,
+        type: "customResult",
+        result: JSON.parse(String(raw)),
+      });
+      return;
+    }
   } catch (err) {
     post({
       id: msg.id,
