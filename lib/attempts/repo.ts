@@ -20,9 +20,16 @@ export function recordAttempt(
   const info = db
     .prepare(
       `INSERT INTO attempts (user_id, problem_id, code, status, runtime_ms, mode)
-       VALUES (@user_id, @problem_id, @code, @status, @runtime_ms, @mode)`,
+       VALUES (?, ?, ?, ?, ?, ?)`,
     )
-    .run(input);
+    .run(
+      input.user_id,
+      input.problem_id,
+      input.code,
+      input.status,
+      input.runtime_ms,
+      input.mode,
+    );
   return Number(info.lastInsertRowid);
 }
 

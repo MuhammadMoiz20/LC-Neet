@@ -15,12 +15,12 @@ export function upsertReview(
 ): void {
   db.prepare(
     `INSERT INTO review_queue (user_id, problem_id, due_at, ease, interval_days)
-     VALUES (@user_id, @problem_id, @due_at, @ease, @interval_days)
+     VALUES (?, ?, ?, ?, ?)
      ON CONFLICT(user_id, problem_id) DO UPDATE SET
        due_at = excluded.due_at,
        ease = excluded.ease,
        interval_days = excluded.interval_days`,
-  ).run(r);
+  ).run(r.user_id, r.problem_id, r.due_at, r.ease, r.interval_days);
 }
 
 export function dueReviews(

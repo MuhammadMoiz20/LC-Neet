@@ -48,12 +48,12 @@ export function upsertAnalysis(
 ): void {
   db.prepare(
     `INSERT INTO analyses (attempt_id, kind, content_md, status)
-     VALUES (@attempt_id, @kind, @content_md, @status)
+     VALUES (?, ?, ?, ?)
      ON CONFLICT(attempt_id, kind) DO UPDATE SET
        content_md = excluded.content_md,
        status = excluded.status,
        created_at = strftime('%s','now')`,
-  ).run(row);
+  ).run(row.attempt_id, row.kind, row.content_md, row.status);
 }
 
 export function getByAttempt(db: Database.Database, attemptId: number): Analysis[] {
@@ -71,8 +71,8 @@ export function recordMistake(
 ): number {
   const info = db.prepare(
     `INSERT INTO mistakes (user_id, problem_id, attempt_id, category, note)
-     VALUES (@user_id, @problem_id, @attempt_id, @category, @note)`,
-  ).run(m);
+     VALUES (?, ?, ?, ?, ?)`,
+  ).run(m.user_id, m.problem_id, m.attempt_id, m.category, m.note);
   return Number(info.lastInsertRowid);
 }
 

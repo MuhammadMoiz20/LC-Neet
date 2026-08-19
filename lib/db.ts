@@ -127,9 +127,30 @@ function stripMetadata<T>(row: T): T {
   return row;
 }
 
-function wrapPrepare(db: Database.Database): void {
+/**
+ * libsql's remote (Hrana) path does not bind named parameters — `@name`,
+ * `:name`, and `$name` all silently bind NULL instead of erroring. On nullable
+ * columns that writes bad data with no warning, so refuse the query outright.
+ * Only positional `?` binding is safe against Turso.
+ */
+const NAMED_PARAM = /(?<![\w:@$])[@:$][a-z_][a-z0-9_]*/i;
+
+function assertPositionalParams(sql: string): void {
+  // Ignore string literals, where a bare @ or : is just text.
+  const stripped = sql.replace(/'(?:[^']|'')*'/g, "''");
+  const match = NAMED_PARAM.exec(stripped);
+  if (match) {
+    throw new Error(
+      `Named parameter "${match[0]}" is not supported against remote Turso ` +
+        `(libsql binds it as NULL). Use positional ? binding instead.\nSQL: ${sql.trim()}`,
+    );
+  }
+}
+
+function wrapPrepare(db: Database.Database, remote: boolean): void {
   const original = db.prepare.bind(db);
   db.prepare = ((sql: string) => {
+    if (remote) assertPositionalParams(sql);
     const stmt = original(sql);
     const get = stmt.get.bind(stmt);
     stmt.get = ((...args: unknown[]) => stripMetadata(get(...args))) as typeof stmt.get;
@@ -140,7 +161,7 @@ function wrapPrepare(db: Database.Database): void {
 export function getDb(filePath = defaultTarget()): Database.Database {
   if (cached && cachedPath === filePath && cached.open) return cached;
   const db = open(filePath);
-  wrapPrepare(db);
+  wrapPrepare(db, isRemote(filePath));
   if (!isRemote(filePath)) {
     db.pragma("journal_mode = WAL");
     db.pragma("foreign_keys = ON");
