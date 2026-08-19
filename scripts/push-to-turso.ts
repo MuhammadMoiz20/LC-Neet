@@ -10,6 +10,7 @@
 import Database from "libsql";
 import { getDb } from "../lib/db";
 
+/** Parent tables first: Turso enforces foreign keys, unlike the local file. */
 const TABLES = [
   "users",
   "problems",
@@ -17,8 +18,9 @@ const TABLES = [
   "chat_messages",
   "analyses",
   "mistakes",
-  "reviews",
-  "daily_sessions",
+  "pattern_counters",
+  "review_queue",
+  "daily",
 ] as const;
 
 const url = process.env.TURSO_DATABASE_URL;
@@ -51,8 +53,25 @@ for (const table of TABLES) {
       .map(() => "?")
       .join(",")})`,
   );
-  for (const row of rows) stmt.run(...cols.map((c) => row[c]));
-  console.log(`copied ${rows.length} rows -> ${table}`);
+  let copied = 0;
+  const skipped: string[] = [];
+  for (const row of rows) {
+    try {
+      stmt.run(...cols.map((c) => row[c]));
+      copied++;
+    } catch (err) {
+      // The local file accumulated rows whose parents were later deleted;
+      // SQLite never rejected them because foreign_keys was off for those
+      // writes. Skip them rather than aborting the whole migration.
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!msg.includes("FOREIGN KEY")) throw err;
+      skipped.push(String(row.id ?? JSON.stringify(row)));
+    }
+  }
+  console.log(
+    `copied ${copied}/${rows.length} rows -> ${table}` +
+      (skipped.length ? `  (skipped orphans: ${skipped.join(", ")})` : ""),
+  );
 }
 
 console.log("done");
