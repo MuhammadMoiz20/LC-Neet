@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, after } from "next/server";
 import { getDb } from "@/lib/db";
 import { requireUserId } from "@/lib/auth/current-user";
 import { getByAttempt } from "@/lib/analysis/repo";
@@ -6,6 +6,8 @@ import { runPipeline } from "@/lib/analysis/pipeline";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// The pipeline fans out several LLM calls; give it room beyond the default.
+export const maxDuration = 300;
 
 type AttemptCtx = {
   id: number;
@@ -69,20 +71,25 @@ export async function POST(
 
   const force = req.nextUrl.searchParams.get("force") === "1";
 
-  void runPipeline(
-    db,
-    {
-      attemptId: id,
-      userId,
-      problemId: ctx.problem_id,
-      code: ctx.code,
-      problemTitle: ctx.title,
-      problemTopic: ctx.topic,
-      problemDifficulty: ctx.difficulty,
-      problemDescription: ctx.description_md,
-      mode: ctx.mode ?? undefined,
-    },
-    { force },
+  // Serverless freezes the function once the response is returned, so a bare
+  // fire-and-forget promise never runs to completion. `after` keeps the
+  // invocation alive for it.
+  after(() =>
+    runPipeline(
+      db,
+      {
+        attemptId: id,
+        userId,
+        problemId: ctx.problem_id,
+        code: ctx.code,
+        problemTitle: ctx.title,
+        problemTopic: ctx.topic,
+        problemDifficulty: ctx.difficulty,
+        problemDescription: ctx.description_md,
+        mode: ctx.mode ?? undefined,
+      },
+      { force },
+    ),
   );
 
   return Response.json({ rows: getByAttempt(db, id) });
