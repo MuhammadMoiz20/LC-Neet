@@ -1,4 +1,4 @@
-import type Database from "better-sqlite3";
+import type Database from "libsql";
 
 export type HeatmapLevel = 0 | 1 | 2 | 3 | 4;
 export type HeatmapDay = { level: HeatmapLevel; count: number };

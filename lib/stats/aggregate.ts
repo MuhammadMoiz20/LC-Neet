@@ -1,4 +1,4 @@
-import type Database from "better-sqlite3";
+import type Database from "libsql";
 import { listMistakesForUser, listPatternCounters } from "@/lib/analysis/repo";
 
 export type TopicSlice = { topic: string; solved: number; total: number };

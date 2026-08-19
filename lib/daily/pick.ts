@@ -1,4 +1,4 @@
-import type Database from "better-sqlite3";
+import type Database from "libsql";
 import { getSolvedProblemIds } from "@/lib/stats/repo";
 import { dueReviews } from "@/lib/sr/repo";
 

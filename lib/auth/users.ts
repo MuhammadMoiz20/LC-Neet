@@ -1,4 +1,4 @@
-import type Database from "better-sqlite3";
+import type Database from "libsql";
 import bcrypt from "bcryptjs";
 
 export type User = { id: number; email: string };

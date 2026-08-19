@@ -1,10 +1,9 @@
-import { query, tool, createSdkMcpServer } from "@anthropic-ai/claude-agent-sdk";
-import { z } from "zod";
 import type { ChatMessage, ChatMode } from "../chat/repo";
 import { getDb } from "../db";
 import { getProblemMeta, getUserHistory } from "./tools";
 import { systemPrompt } from "./prompts";
 import { looksLikeFullSolution } from "./filter";
+import { streamChat, type ToolDef } from "../llm/openrouter";
 
 export type CoachEvent =
   | { type: "delta"; text: string }
@@ -42,93 +41,60 @@ function buildContextHeader(input: StreamCoachInput): string {
   return parts.join("\n\n");
 }
 
+function coachTools(input: StreamCoachInput): ToolDef[] {
+  return [
+    {
+      name: "get_problem_meta",
+      description:
+        "Return title, difficulty, topic, and a short description excerpt for the current problem.",
+      parameters: {
+        type: "object",
+        properties: { problemId: { type: "integer" } },
+        required: ["problemId"],
+      },
+      handler: (args) =>
+        JSON.stringify(getProblemMeta(getDb(), Number(args.problemId))),
+    },
+    {
+      name: "get_user_history",
+      description:
+        "Return up to N recent attempts by the current user filtered to a topic.",
+      parameters: {
+        type: "object",
+        properties: {
+          topic: { type: "string" },
+          limit: { type: "integer", minimum: 1, maximum: 50 },
+        },
+        required: ["topic"],
+      },
+      handler: (args) => {
+        const limit = Math.min(50, Math.max(1, Number(args.limit) || 10));
+        return JSON.stringify(
+          getUserHistory(getDb(), input.userId, String(args.topic), limit),
+        );
+      },
+    },
+  ];
+}
+
 export async function* streamCoach(
   input: StreamCoachInput,
 ): AsyncGenerator<CoachEvent> {
-  const mcpServer = createSdkMcpServer({
-    name: "lcneet",
-    version: "1.0.0",
-    tools: [
-      tool(
-        "get_problem_meta",
-        "Return title, difficulty, topic, and a short description excerpt for the current problem.",
-        { problemId: z.number().int() },
-        async (args: { problemId: number }) => {
-          const meta = getProblemMeta(getDb(), args.problemId);
-          return {
-            content: [
-              { type: "text" as const, text: JSON.stringify(meta) },
-            ],
-          };
-        },
-      ),
-      tool(
-        "get_user_history",
-        "Return up to N recent attempts by the current user filtered to a topic.",
-        {
-          topic: z.string(),
-          limit: z.number().int().min(1).max(50).default(10),
-        },
-        async (args: { topic: string; limit: number }) => {
-          const hist = getUserHistory(
-            getDb(),
-            input.userId,
-            args.topic,
-            args.limit,
-          );
-          return {
-            content: [
-              { type: "text" as const, text: JSON.stringify(hist) },
-            ],
-          };
-        },
-      ),
-    ],
-  });
-
   const fullPrompt = `${buildContextHeader(input)}\n\nUser: ${input.userMessage}`;
 
   let buffer = "";
-  let blocked = false;
-  const it = query({
-    prompt: fullPrompt,
-    options: {
-      model: "claude-haiku-4-5",
-      systemPrompt: systemPrompt(input.mode),
-      mcpServers: { lcneet: mcpServer },
-      allowedTools: [
-        "mcp__lcneet__get_problem_meta",
-        "mcp__lcneet__get_user_history",
-      ],
-      includePartialMessages: true,
-      maxTurns: 4,
-    },
-  });
-
-  for await (const msg of it) {
-    if (blocked) continue;
-    if (msg.type === "stream_event") {
-      const ev = msg.event as {
-        type?: string;
-        delta?: { type?: string; text?: string };
-      };
-      if (
-        ev?.type === "content_block_delta" &&
-        ev.delta?.type === "text_delta" &&
-        typeof ev.delta.text === "string"
-      ) {
-        const text = ev.delta.text;
-        buffer += text;
-        if (looksLikeFullSolution(buffer)) {
-          blocked = true;
-          yield { type: "blocked", text: BLOCKED_MESSAGE };
-          continue;
-        }
-        yield { type: "delta", text };
-      }
-    } else if (msg.type === "result") {
-      break;
+  for await (const text of streamChat({
+    system: systemPrompt(input.mode),
+    messages: [{ role: "user", content: fullPrompt }],
+    tools: coachTools(input),
+    maxTurns: 4,
+  })) {
+    buffer += text;
+    if (looksLikeFullSolution(buffer)) {
+      yield { type: "blocked", text: BLOCKED_MESSAGE };
+      return;
     }
+    yield { type: "delta", text };
   }
-  if (!blocked) yield { type: "done" };
+  yield { type: "done" };
 }

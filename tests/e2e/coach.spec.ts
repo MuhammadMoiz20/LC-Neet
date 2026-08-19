@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-const HAS_AUTH = !!process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_AGENT_AUTH_OK === "1";
+const HAS_AUTH = !!process.env.OPENROUTER_API_KEY;
 
 test.skip(!HAS_AUTH, "no agent auth available — set CLAUDE_AGENT_AUTH_OK=1 if Claude Max is logged in");
 

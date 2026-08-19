@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 const HAS_AUTH =
-  !!process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_AGENT_AUTH_OK === "1";
+  !!process.env.OPENROUTER_API_KEY;
 const RUN = process.env.RUN_ANALYSIS_E2E === "1";
 
 test.skip(!RUN || !HAS_AUTH, "set RUN_ANALYSIS_E2E=1 + agent auth to run");

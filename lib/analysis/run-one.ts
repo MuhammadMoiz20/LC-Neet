@@ -1,4 +1,4 @@
-import { query } from "@anthropic-ai/claude-agent-sdk";
+import { completeChat } from "@/lib/llm/openrouter";
 import { looksLikeFullSolution } from "@/lib/agent/filter";
 import { analysisPrompt } from "./prompts";
 import type { AnalysisKind, AnalysisStatus } from "./repo";
@@ -32,21 +32,10 @@ ${input.code}
 Provide the analysis described in your system prompt.`;
 
   try {
-    let buffer = "";
-    for await (const m of query({
-      prompt: userPrompt,
-      options: {
-        model: "claude-sonnet-4-6",
-        systemPrompt: analysisPrompt(input.kind),
-        maxTurns: 1,
-      },
-    })) {
-      if (m.type === "assistant") {
-        for (const block of m.message.content) {
-          if (block.type === "text") buffer += block.text;
-        }
-      }
-    }
+    const buffer = await completeChat({
+      system: analysisPrompt(input.kind),
+      messages: [{ role: "user", content: userPrompt }],
+    });
     if (looksLikeFullSolution(buffer)) {
       return {
         kind: input.kind,

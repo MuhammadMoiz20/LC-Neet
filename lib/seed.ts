@@ -1,4 +1,4 @@
-import type Database from "better-sqlite3";
+import type Database from "libsql";
 import fs from "node:fs";
 import path from "node:path";
 import { Problems } from "./problems/types";

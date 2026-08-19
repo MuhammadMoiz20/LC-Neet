@@ -1,4 +1,4 @@
-import Database from "better-sqlite3";
+import Database from "libsql";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -92,12 +92,59 @@ CREATE TABLE IF NOT EXISTS daily (
 let cached: Database.Database | null = null;
 let cachedPath: string | null = null;
 
-export function getDb(filePath = "data/app.db"): Database.Database {
+/**
+ * Remote Turso is used when TURSO_DATABASE_URL is set (serverless deploys,
+ * where the filesystem is read-only and ephemeral). Otherwise we open a local
+ * SQLite file, which is what dev, tests, and the Mac Studio box do.
+ */
+function isRemote(target: string): boolean {
+  return target.startsWith("libsql://") || target.startsWith("https://");
+}
+
+function defaultTarget(): string {
+  return process.env.TURSO_DATABASE_URL || "data/app.db";
+}
+
+function open(target: string): Database.Database {
+  if (isRemote(target)) {
+    // `authToken` is accepted at runtime but missing from libsql's (stale) types.
+    return new Database(target, {
+      authToken: process.env.TURSO_AUTH_TOKEN,
+    } as Database.Options);
+  }
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  return new Database(target);
+}
+
+/**
+ * libsql's `.get()` decorates rows with a `_metadata` key that better-sqlite3
+ * never returned. Strip it once here so no call site has to care.
+ */
+function stripMetadata<T>(row: T): T {
+  if (row && typeof row === "object" && "_metadata" in row) {
+    delete (row as Record<string, unknown>)._metadata;
+  }
+  return row;
+}
+
+function wrapPrepare(db: Database.Database): void {
+  const original = db.prepare.bind(db);
+  db.prepare = ((sql: string) => {
+    const stmt = original(sql);
+    const get = stmt.get.bind(stmt);
+    stmt.get = ((...args: unknown[]) => stripMetadata(get(...args))) as typeof stmt.get;
+    return stmt;
+  }) as typeof db.prepare;
+}
+
+export function getDb(filePath = defaultTarget()): Database.Database {
   if (cached && cachedPath === filePath && cached.open) return cached;
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  const db = new Database(filePath);
-  db.pragma("journal_mode = WAL");
-  db.pragma("foreign_keys = ON");
+  const db = open(filePath);
+  wrapPrepare(db);
+  if (!isRemote(filePath)) {
+    db.pragma("journal_mode = WAL");
+    db.pragma("foreign_keys = ON");
+  }
   db.exec(SCHEMA);
   const cols = db.prepare("PRAGMA table_info(problems)").all() as { name: string }[];
   if (!cols.some((c) => c.name === "method_name")) {
