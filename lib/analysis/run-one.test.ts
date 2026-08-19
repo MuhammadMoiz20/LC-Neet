@@ -62,3 +62,10 @@ describe("runOne", () => {
     expect(result.content_md).toBe("clean text");
   });
 });
+
+test("marks an empty model response as error rather than done", async () => {
+  vi.mocked(completeChat).mockResolvedValue("   \n  ");
+  const result = await runOne({ kind: "mistake", ...baseInput });
+  expect(result.status).toBe("error");
+  expect(result.content_md).toContain("empty response");
+});

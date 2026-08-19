@@ -43,7 +43,17 @@ Provide the analysis described in your system prompt.`;
         status: "error",
       };
     }
-    return { kind: input.kind, content_md: buffer.trim(), status: "done" };
+    const content = buffer.trim();
+    if (content === "") {
+      // A model occasionally returns nothing; marking it done would leave a
+      // blank panel that never retries.
+      return {
+        kind: input.kind,
+        content_md: "[error: empty response from model]",
+        status: "error",
+      };
+    }
+    return { kind: input.kind, content_md: content, status: "done" };
   } catch (err) {
     const msg = err instanceof Error ? err.message : "unknown error";
     return { kind: input.kind, content_md: `[error: ${msg}]`, status: "error" };
