@@ -1,0 +1,60 @@
+diff --git a/auth.ts b/auth.ts
+index 9ad1f0b..b89c0a5 100644
+--- a/auth.ts
++++ b/auth.ts
+@@ -3,7 +3,7 @@ import Credentials from "next-auth/providers/credentials";
+ import { getDb } from "@/lib/db";
+ import { verifyPassword } from "@/lib/auth/users";
+ 
+-export const { handlers, auth, signIn, signOut } = NextAuth({
++const nextAuth = NextAuth({
+   providers: [
+     Credentials({
+       credentials: {
+@@ -33,3 +33,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
+     },
+   },
+ });
++
++export const handlers = nextAuth.handlers;
++export const signIn = nextAuth.signIn;
++export const signOut = nextAuth.signOut;
++
++// Auth disabled for private-network use: always act as the default user.
++const DEFAULT_SESSION = {
++  user: { id: "2", email: "moiz@local" },
++  expires: "2999-01-01T00:00:00.000Z",
++} as const;
++
++export async function auth(): Promise<typeof DEFAULT_SESSION> {
++  return DEFAULT_SESSION;
++}
+diff --git a/middleware.ts b/middleware.ts
+index d00c747..a9a22a6 100644
+--- a/middleware.ts
++++ b/middleware.ts
+@@ -1,18 +1,8 @@
+-import NextAuth from "next-auth";
+-import { authConfig } from "@/auth.config";
++import type { NextRequest } from "next/server";
+ 
+-const { auth } = NextAuth(authConfig);
++// Auth disabled for private-network use: allow every request through.
++export default function middleware(_req: NextRequest) {
++  return;
++}
+ 
+-export default auth((req) => {
+-  const { pathname } = req.nextUrl;
+-  if (pathname.startsWith("/login") || pathname.startsWith("/api/auth") || pathname.startsWith("/api/harness")) return;
+-  if (!req.auth) {
+-    const url = req.nextUrl.clone();
+-    url.pathname = "/login";
+-    return Response.redirect(url);
+-  }
+-});
+-
+-export const config = {
+-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+-};
++export const config = { matcher: [] };
