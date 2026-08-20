@@ -29,6 +29,15 @@ import heapq
 from collections import Counter, defaultdict, deque
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
+# CPython 3.14 promoted heapq's max-heap helpers to public names. Pyodide is
+# still on 3.12, where they exist only as private `_`-prefixed functions, so
+# solutions written against the judges that do run 3.14 fail here with
+# AttributeError. Alias the private implementations onto the public names.
+for _pub in ("heapify_max", "heappush_max", "heappop_max", "heapreplace_max", "heappushpop_max"):
+    if not hasattr(heapq, _pub) and hasattr(heapq, "_" + _pub):
+        setattr(heapq, _pub, getattr(heapq, "_" + _pub))
+del _pub
+
 
 class ListNode:
     def __init__(self, val=0, next=None):
