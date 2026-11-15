@@ -1,10 +1,12 @@
 "use client";
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Problem } from "@/lib/problems/types";
 import { CodeEditor } from "@/components/code-editor";
 import { usePyodideRunner } from "@/lib/pyodide/use-pyodide-runner";
 import type { CustomResult, RunResult } from "@/lib/pyodide/worker-protocol";
 import { submitAttempt, getMyAttempts } from "./actions";
+import { markRevisit } from "@/app/(app)/board/actions";
 import { SubmissionsTab } from "@/components/workspace/submissions-tab";
 import { CoachPanel } from "@/components/coach-panel";
 import { Icon, IconButton, toast } from "@/components/ui";
@@ -57,14 +59,70 @@ export function ProblemWorkspace({
   interviewMode?: boolean;
   interviewDurationMin?: number;
 }) {
-  const [code, setCode] = useState(problem.starter_code);
-  const [notes, setNotes] = useState("");
+  // The tab bar says "autosaved", so make it true: keep the draft in this
+  // browser and restore it on return. Interview rounds always start clean.
+  // `code` only reaches client-only components, so reading storage in the
+  // initializer can't cause a hydration mismatch.
+  const draftKey = interviewMode ? null : `lcn-draft-${problem.slug}`;
+  const [code, setCode] = useState(() => {
+    if (draftKey && typeof window !== "undefined") {
+      try {
+        return window.localStorage.getItem(draftKey) ?? problem.starter_code;
+      } catch {}
+    }
+    return problem.starter_code;
+  });
+  useEffect(() => {
+    if (!draftKey) return;
+    try {
+      // Untouched starter code is not a draft: storing it would pin an old
+      // starter in this browser after the catalog's is corrected.
+      if (code === problem.starter_code) window.localStorage.removeItem(draftKey);
+      else window.localStorage.setItem(draftKey, code);
+    } catch {}
+  }, [draftKey, code, problem.starter_code]);
+  // Notes persist the same way as the draft; `notes` only feeds a textarea
+  // that renders after a tab click, so no hydration mismatch here either.
+  const notesKey = interviewMode ? null : `lcn-notes-${problem.slug}`;
+  const [notes, setNotes] = useState(() => {
+    if (notesKey && typeof window !== "undefined") {
+      try {
+        return window.localStorage.getItem(notesKey) ?? "";
+      } catch {}
+    }
+    return "";
+  });
+  useEffect(() => {
+    if (!notesKey) return;
+    try {
+      window.localStorage.setItem(notesKey, notes);
+    } catch {}
+  }, [notesKey, notes]);
+  const [revisitPending, setRevisitPending] = useState(false);
+  async function onRevisit() {
+    if (revisitPending) return;
+    setRevisitPending(true);
+    try {
+      await markRevisit(problem.id);
+      toast("Marked. It'll be back in your queue tomorrow.", { kind: "success" });
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Couldn't mark for revisit", {
+        kind: "error",
+      });
+    } finally {
+      setRevisitPending(false);
+    }
+  }
   const [tab, setTab] = useState<WorkspaceTabId>("sol");
   const [lang, setLang] = useState<EditorLang>("Python 3");
   const [result, setResult] = useState<RunResult | null>(null);
   const [customResult, setCustomResult] = useState<CustomResult | null>(null);
-  const [customRunning, setCustomRunning] = useState(false);
-  const [running, setRunning] = useState(false);
+  // What the Python worker is doing for this workspace. One thing at a time:
+  // idle (null) ──► run | submit | custom ──► idle. Stop is available throughout.
+  const [activity, setActivity] = useState<"run" | "submit" | "custom" | null>(
+    null,
+  );
+  const running = activity === "run" || activity === "submit";
   const [submitted, setSubmitted] = useState(false);
   const [promptCollapsed, setPromptCollapsed] = useState(false);
   const [coachOpen, setCoachOpen] = useState(false);
@@ -74,15 +132,18 @@ export function ProblemWorkspace({
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [submissionsRefreshKey, setSubmissionsRefreshKey] = useState(0);
   const { status: pyStatus, run, runCustom, cancel, errorMsg } = usePyodideRunner();
+  const pythonReady = pyStatus === "ready" || pyStatus === "running";
 
-  // Interview timer (preserved)
+  // Interview session: active ──► expired (final attempt auto-submitted once).
   const [endsAt] = useState(() =>
     interviewMode ? Date.now() + interviewDurationMin * 60_000 : 0,
   );
   const [remainingMs, setRemainingMs] = useState(() =>
     interviewMode ? interviewDurationMin * 60_000 : 0,
   );
-  const [ended, setEnded] = useState(false);
+  const [interviewAttemptId, setInterviewAttemptId] = useState<number | null>(
+    null,
+  );
   const autoSubmittedRef = useRef(false);
   const expired = interviewMode && remainingMs <= 0;
 
@@ -113,9 +174,8 @@ export function ProblemWorkspace({
 
   const performRun = useCallback(
     async (mode: "run" | "submit") => {
-      if (running) return;
-      if (pyStatus !== "ready" && pyStatus !== "running") return;
-      setRunning(true);
+      if (activity !== null || !pythonReady) return;
+      setActivity(mode);
       try {
         const r = await run(
           code,
@@ -145,12 +205,20 @@ export function ProblemWorkspace({
           mode: interviewMode ? "interview" : mode,
         });
         setSubmissionsRefreshKey((k) => k + 1);
+        if (interviewMode) setInterviewAttemptId(attemptId);
         if (allPassed && !interviewMode) {
           fetch(`/api/analysis/${attemptId}`, { method: "POST" }).catch(
             () => {},
           );
           setAnalysisAttemptId(attemptId);
           setSubmitted(true);
+          // An accepted solution is no longer a draft (it stays restorable from
+          // Submissions), so the next visit, often a review, starts clean.
+          if (draftKey) {
+            try {
+              window.localStorage.removeItem(draftKey);
+            } catch {}
+          }
           toast("Submission accepted — analysis ready", { kind: "success" });
         }
       } catch (err) {
@@ -161,7 +229,7 @@ export function ProblemWorkspace({
           toast(msg, { kind: "error" });
         }
       } finally {
-        setRunning(false);
+        setActivity(null);
       }
     },
     [
@@ -171,16 +239,16 @@ export function ProblemWorkspace({
       problem.id,
       run,
       interviewMode,
-      pyStatus,
-      running,
+      pythonReady,
+      activity,
+      draftKey,
     ],
   );
 
   const performCustomRun = useCallback(
     async (inputJson: string) => {
-      if (customRunning) return;
-      if (pyStatus !== "ready" && pyStatus !== "running") return;
-      setCustomRunning(true);
+      if (activity !== null || !pythonReady) return;
+      setActivity("custom");
       try {
         const r = await runCustom(code, inputJson, problem.method_name);
         setCustomResult(r);
@@ -188,37 +256,47 @@ export function ProblemWorkspace({
         const msg = err instanceof Error ? err.message : "run failed";
         if (msg !== "cancelled") toast(msg, { kind: "error" });
       } finally {
-        setCustomRunning(false);
+        setActivity(null);
       }
     },
-    [code, problem.method_name, runCustom, pyStatus, customRunning],
+    [code, problem.method_name, runCustom, pythonReady, activity],
   );
 
-  // Auto-submit on timer expiry (preserve previous behavior)
+  // Auto-submit on timer expiry. If a run is still in flight (or Python is
+  // reloading after Stop) this waits for it rather than dropping the submit.
   useEffect(() => {
-    if (!interviewMode) return;
-    if (!expired) return;
-    if (autoSubmittedRef.current) return;
-    autoSubmittedRef.current = true;
-    setEnded(true);
-    performRun("submit").catch(() => {});
-  }, [interviewMode, expired, performRun]);
+    if (!expired || autoSubmittedRef.current) return;
+    if (activity !== null || !pythonReady) return;
+    // Deferred a tick: starting a run sets state, which an effect body must not.
+    const t = setTimeout(() => {
+      autoSubmittedRef.current = true;
+      performRun("submit").catch(() => {});
+    });
+    return () => clearTimeout(t);
+  }, [expired, activity, pythonReady, performRun]);
 
   // Workspace-scoped keyboard shortcuts
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (isEditableTarget(e.target)) return;
       const meta = e.metaKey || e.ctrlKey;
       if (!meta) return;
+      if (e.key === "Enter") {
+        // Other fields (coach, custom input) own their Enter, and nothing runs
+        // by hand once an interview has expired.
+        const inEditor =
+          e.target instanceof HTMLElement && !!e.target.closest(".monaco-editor");
+        if (expired || (isEditableTarget(e.target) && !inEditor)) return;
+        // Works from inside the editor too, which is where the cursor usually
+        // is. stopPropagation keeps Monaco from also inserting a line.
+        e.preventDefault();
+        e.stopPropagation();
+        performRun(e.shiftKey ? "submit" : "run");
+        return;
+      }
+      // Letter shortcuts stay out of text fields, where they mean other things.
+      if (isEditableTarget(e.target)) return;
       const k = e.key.toLowerCase();
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        performRun("run");
-      } else if (e.key === "Enter" && e.shiftKey) {
-        e.preventDefault();
-        performRun("submit");
-      } else if (k === "b") {
-        if (interviewMode) return;
+      if (k === "b") {
         e.preventDefault();
         setPromptCollapsed((c) => !c);
       } else if (k === "j") {
@@ -230,12 +308,32 @@ export function ProblemWorkspace({
         setAnalysisOpen((o) => !o);
       }
     }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [performRun, analysisAttemptId, interviewMode]);
+    // Capture phase, so this runs before Monaco's own key handling.
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [performRun, analysisAttemptId, expired]);
 
-  const pythonReady = pyStatus === "ready" || pyStatus === "running";
   const analysisReady = analysisAttemptId != null && submitted;
+
+  // The command palette lives in the app shell; it asks for a panel toggle with
+  // a cancelable event, and cancelling tells it the request was handled here.
+  useEffect(() => {
+    function onCoach(e: Event) {
+      e.preventDefault();
+      setCoachOpen((o) => !o);
+    }
+    function onAnalysis(e: Event) {
+      if (!analysisReady) return;
+      e.preventDefault();
+      setAnalysisOpen((o) => !o);
+    }
+    window.addEventListener("lcn:toggle-coach", onCoach);
+    window.addEventListener("lcn:toggle-analysis", onAnalysis);
+    return () => {
+      window.removeEventListener("lcn:toggle-coach", onCoach);
+      window.removeEventListener("lcn:toggle-analysis", onAnalysis);
+    };
+  }, [analysisReady]);
 
   return (
     <div
@@ -247,13 +345,12 @@ export function ProblemWorkspace({
         position: "relative",
       }}
     >
-      {!interviewMode && (
-        <PromptRail
-          problem={problem}
-          collapsed={promptCollapsed}
-          onToggle={() => setPromptCollapsed((c) => !c)}
-        />
-      )}
+      <PromptRail
+        problem={problem}
+        collapsed={promptCollapsed}
+        onToggle={() => setPromptCollapsed((c) => !c)}
+        hideHints={interviewMode}
+      />
       <div
         className="col"
         style={{ flex: 1, minWidth: 0, height: "100%" }}
@@ -264,7 +361,7 @@ export function ProblemWorkspace({
           onStop={() => cancel()}
           onSubmit={() => performRun("submit")}
           onReset={() => setCode(problem.starter_code)}
-          running={running}
+          running={activity !== null}
           pythonReady={pythonReady}
           hasAnalysis={analysisReady}
           analysisOpen={analysisOpen}
@@ -272,6 +369,8 @@ export function ProblemWorkspace({
           lang={lang}
           setLang={setLang}
           hideSubmitInIv={false}
+          onRevisit={interviewMode ? undefined : onRevisit}
+          revisitPending={revisitPending}
         />
         <div
           className="col"
@@ -364,7 +463,7 @@ export function ProblemWorkspace({
             hideStats={interviewMode}
             customInputDefault={JSON.stringify(problem.test_cases[0]?.input ?? {}, null, 2)}
             customResult={customResult}
-            customRunning={customRunning}
+            customRunning={activity === "custom"}
             onRunCustom={performCustomRun}
           />
         </div>
@@ -485,7 +584,7 @@ export function ProblemWorkspace({
         </div>
       )}
 
-      {ended && (
+      {expired && (
         <div
           style={{
             position: "absolute",
@@ -511,10 +610,27 @@ export function ProblemWorkspace({
             </h2>
             <p
               className="muted"
-              style={{ margin: 0, fontSize: 13 }}
+              style={{ margin: "0 0 14px", fontSize: 13 }}
             >
-              Your final attempt has been submitted.
+              {activity === "submit"
+                ? "Submitting your final attempt…"
+                : interviewAttemptId != null
+                  ? "Your final attempt has been submitted."
+                  : "Time's up."}
             </p>
+            <div className="row" style={{ gap: 8, justifyContent: "center" }}>
+              {interviewAttemptId != null && activity === null && (
+                <Link
+                  href={`/analysis/${interviewAttemptId}`}
+                  className="btn btn-primary btn-sm"
+                >
+                  View debrief
+                </Link>
+              )}
+              <Link href="/" className="btn btn-sm">
+                Dashboard
+              </Link>
+            </div>
           </div>
         </div>
       )}

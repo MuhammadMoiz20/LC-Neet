@@ -319,6 +319,24 @@ export function AnalysisContent({
   );
 }
 
+/** Shown when rows are still pending after the server's time budget. */
+export function AnalysisStalled({ onRerun }: { onRerun: () => void }) {
+  return (
+    <div
+      role="status"
+      className="row"
+      style={{ gap: 10, marginBottom: 14, fontSize: 12.5, color: "var(--text-muted)" }}
+    >
+      <span style={{ flex: 1 }}>
+        The analysis didn&apos;t finish. It can be started again.
+      </span>
+      <button type="button" className="btn btn-sm" onClick={onRerun}>
+        Rerun
+      </button>
+    </div>
+  );
+}
+
 export function AnalysisHeroPill({ verdict }: { verdict: "Accepted" | "Wrong" | "Error" | "TLE" }) {
   if (verdict === "Accepted") {
     return (

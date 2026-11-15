@@ -31,9 +31,20 @@ describe("daily/pick", () => {
     expect(b).toBe(c);
   });
 
-  it("prefers due reviews when present", async () => {
+  it("falls back to a due review once everything is solved", async () => {
     const { db, userId } = await setup();
     const now = 1_700_000_000;
+    const all = db.prepare(`SELECT id FROM problems`).all() as { id: number }[];
+    for (const r of all) {
+      recordAttempt(db, {
+        user_id: userId,
+        problem_id: r.id,
+        code: "x",
+        status: "passed",
+        runtime_ms: 1,
+        mode: "run",
+      });
+    }
     upsertReview(db, {
       user_id: userId,
       problem_id: 2,

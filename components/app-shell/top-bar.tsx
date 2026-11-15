@@ -13,6 +13,13 @@ const TITLE_MAP: Record<string, string> = {
   analysis: "Analysis",
   interview: "Interview",
   stats: "Stats",
+  board: "Board",
+};
+
+// Sections with no index page of their own: where their breadcrumb leads.
+const SECTION_HOME: Record<string, string> = {
+  problem: "/problems",
+  analysis: "/analysis/latest",
 };
 
 export type TopBarProps = {
@@ -90,7 +97,11 @@ export function TopBar({ onOpenPalette, onOpenCheatsheet, avatarInitials = "?" }
           <span style={{ color: "var(--text-faint)" }}>/</span>
           <Link
             className="lnk"
-            href={route === "dashboard" || route === "" ? "/" : `/${route}`}
+            href={
+              route === "dashboard" || route === ""
+                ? "/"
+                : (SECTION_HOME[route] ?? `/${route}`)
+            }
           >
             {title}
           </Link>

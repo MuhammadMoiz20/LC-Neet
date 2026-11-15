@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { Pill } from "@/components/ui";
+import { useTheme } from "@/components/theme-provider";
 import type { Attempt } from "@/lib/attempts/repo";
 
 const Monaco = dynamic(() => import("@monaco-editor/react"), { ssr: false });
@@ -39,6 +40,7 @@ export function SubmissionsTab({
   const [attempts, setAttempts] = useState<Attempt[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [openId, setOpenId] = useState<number | null>(null);
+  const { theme } = useTheme();
 
   useEffect(() => {
     let cancelled = false;
@@ -185,7 +187,7 @@ export function SubmissionsTab({
                 height="100%"
                 defaultLanguage="python"
                 value={a.code}
-                theme="vs-dark"
+                theme={theme === "dark" ? "vs-dark" : "light"}
                 options={{
                   readOnly: true,
                   minimap: { enabled: false },

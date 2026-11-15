@@ -6,6 +6,9 @@ import path from "node:path";
 const testState = { dbPath: "" };
 
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn() })); // needs a request scope
+// cookies() only works inside a request; no `tz` cookie means "server's zone".
+vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => undefined }) }));
 vi.mock("@/lib/db", async () => {
   const actual = await vi.importActual<typeof import("@/lib/db")>("@/lib/db");
   return {
@@ -52,6 +55,16 @@ describe("submitAttempt SR enqueue", () => {
     expect(state).not.toBeNull();
     expect(state!.due_at).toBeGreaterThan(before);
     expect(state!.ease).toBeGreaterThanOrEqual(1.3);
+  });
+
+  test("resubmitting before the review is due does not advance the schedule", async () => {
+    const { submitAttempt } = await import("./actions");
+    const pass = { problemId: 1, code: "ok", status: "passed" as const, runtimeMs: 1, mode: "submit" };
+    await submitAttempt(pass);
+    const first = getReviewState(getDb(), userId, 1);
+    await submitAttempt(pass);
+    await submitAttempt(pass);
+    expect(getReviewState(getDb(), userId, 1)).toEqual(first);
   });
 
   test("failed submission does NOT enqueue review", async () => {

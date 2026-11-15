@@ -1,55 +1,18 @@
 import { test, expect } from "@playwright/test";
+import { openProblem, setCode } from "./helpers";
 
-const HAS_AUTH =
-  !!process.env.OPENROUTER_API_KEY;
-const RUN = process.env.RUN_ANALYSIS_E2E === "1";
+// Works with or without OPENROUTER_API_KEY: without one every section settles
+// as an error, which is still "settled" — the page must stop waiting either way.
+test("a failed submission's analysis starts by itself and settles", async ({ page }) => {
+  test.setTimeout(240_000);
+  await openProblem(page, "/problem/two-sum");
+  await setCode(page, "class Solution:\n    def twoSum(self, nums, target):\n        return []\n");
+  await page.getByRole("button", { name: /^Submit/ }).click();
+  await expect(page.getByText(/tests passed/)).toBeVisible({ timeout: 30_000 });
 
-test.skip(!RUN || !HAS_AUTH, "set RUN_ANALYSIS_E2E=1 + agent auth to run");
-
-test("submitting a correct solution renders all 5 analysis sections", async ({ page }) => {
-  test.setTimeout(180_000);
-
-  await page.goto("/problem/two-sum");
-
-  // Replace starter with a known-correct two-sum solution.
-  const editor = page.locator(".monaco-editor").first();
-  await editor.click();
-  await page.keyboard.press(process.platform === "darwin" ? "Meta+A" : "Control+A");
-  await page.keyboard.press("Backspace");
-  await page.keyboard.type(
-    [
-      "class Solution:",
-      "    def twoSum(self, nums, target):",
-      "        seen = {}",
-      "        for i, n in enumerate(nums):",
-      "            if target - n in seen:",
-      "                return [seen[target - n], i]",
-      "            seen[n] = i",
-      "        return []",
-    ].join("\n"),
-  );
-
-  await page.getByRole("button", { name: /Run tests/ }).click();
-
-  const link = page.getByRole("link", { name: /Analysis ready/ });
-  await expect(link).toBeVisible({ timeout: 60_000 });
-  await link.click();
-
-  for (const heading of [
-    "Code Quality",
-    "Complexity",
-    "Comparison to Optimal",
-    "Pattern",
-    "Mistake Detection",
-  ]) {
-    await expect(page.getByRole("heading", { name: heading })).toBeVisible();
-  }
-
-  // Wait until no section is still "pending" (poll status pills).
-  await expect
-    .poll(
-      async () => (await page.getByText("pending").count()),
-      { timeout: 120_000 },
-    )
-    .toBe(0);
+  await page.goto("/analysis/latest");
+  await expect(page).toHaveURL(/\/analysis\/\d+$/);
+  await expect(page.getByRole("button", { name: "Rerun analysis" })).toBeEnabled({
+    timeout: 180_000,
+  });
 });

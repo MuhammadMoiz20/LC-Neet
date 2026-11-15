@@ -71,26 +71,26 @@ export async function POST(
 
   const force = req.nextUrl.searchParams.get("force") === "1";
 
-  // Serverless freezes the function once the response is returned, so a bare
-  // fire-and-forget promise never runs to completion. `after` keeps the
-  // invocation alive for it.
-  after(() =>
-    runPipeline(
-      db,
-      {
-        attemptId: id,
-        userId,
-        problemId: ctx.problem_id,
-        code: ctx.code,
-        problemTitle: ctx.title,
-        problemTopic: ctx.topic,
-        problemDifficulty: ctx.difficulty,
-        problemDescription: ctx.description_md,
-        mode: ctx.mode ?? undefined,
-      },
-      { force },
-    ),
+  // Calling runPipeline here runs its synchronous prefix now, which marks every
+  // kind pending — so the rows returned below (and any poll that follows)
+  // already show the run in progress. Serverless freezes the function once the
+  // response is sent; `after` keeps the invocation alive for the LLM calls.
+  const run = runPipeline(
+    db,
+    {
+      attemptId: id,
+      userId,
+      problemId: ctx.problem_id,
+      code: ctx.code,
+      problemTitle: ctx.title,
+      problemTopic: ctx.topic,
+      problemDifficulty: ctx.difficulty,
+      problemDescription: ctx.description_md,
+      mode: ctx.mode ?? undefined,
+    },
+    { force },
   );
+  after(() => run);
 
   return Response.json({ rows: getByAttempt(db, id) });
 }

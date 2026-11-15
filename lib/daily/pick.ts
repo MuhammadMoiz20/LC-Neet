@@ -1,6 +1,7 @@
 import type Database from "libsql";
 import { getSolvedProblemIds } from "@/lib/stats/repo";
 import { dueReviews } from "@/lib/sr/repo";
+import { listProblems } from "@/lib/problems/repo";
 
 function hashSeed(userId: number, date: string): number {
   let h = 2166136261 ^ userId;
@@ -11,7 +12,7 @@ function hashSeed(userId: number, date: string): number {
 export function pickDaily(db: Database.Database, userId: number, dateISO: string, now: number): number {
   const seed = hashSeed(userId, dateISO);
   const solved = getSolvedProblemIds(db, userId);
-  const all = db.prepare(`SELECT id FROM problems ORDER BY id`).all() as { id: number }[];
+  const all = listProblems(db);
   const unsolved = all.filter((r) => !solved.has(r.id));
   if (unsolved.length > 0) return unsolved[seed % unsolved.length].id;
   // Everything solved — fall back to a due review, then to anything.

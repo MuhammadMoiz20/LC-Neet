@@ -14,6 +14,7 @@ const SECTIONS: { title: string; rows: [string, string][] }[] = [
       ["⌘ K", "Command palette"],
       ["g d", "Dashboard"],
       ["g p", "Problems"],
+      ["g b", "Progress board"],
       ["g i", "Interview mode"],
     ],
   },

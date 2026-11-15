@@ -17,6 +17,10 @@ const KINDS_BASE: AnalysisKind[] = [
   "mistake",
 ];
 
+// A run cannot outlive the API route's maxDuration (300s), so a row still
+// pending after that belongs to a run that died.
+const RUN_BUDGET_SEC = 300;
+
 export type PipelineContext = {
   attemptId: number;
   userId: number;
@@ -38,14 +42,15 @@ export async function runPipeline(
   const kinds: AnalysisKind[] = interview
     ? [...KINDS_BASE, "interview_debrief"]
     : KINDS_BASE;
+  // Starting is idempotent: once an attempt has rows (pending, done, or error)
+  // only an explicit rerun restarts it, so a second client asking to "start"
+  // can never launch a duplicate set of LLM calls. The exception is a run that
+  // died: its rows would stay pending forever, so a later start takes over.
   if (!opts.force) {
-    const existing = getByAttempt(db, ctx.attemptId);
-    if (
-      existing.length === kinds.length &&
-      existing.every((r) => r.status !== "pending")
-    ) {
-      return; // idempotent short-circuit
-    }
+    const rows = getByAttempt(db, ctx.attemptId);
+    const deadBefore = Date.now() / 1000 - RUN_BUDGET_SEC;
+    const died = rows.some((r) => r.status === "pending" && r.created_at < deadBefore);
+    if (rows.length > 0 && !died) return;
   }
   for (const kind of kinds) {
     upsertAnalysis(db, {

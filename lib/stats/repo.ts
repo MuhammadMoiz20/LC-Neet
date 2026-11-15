@@ -1,4 +1,5 @@
 import type Database from "libsql";
+import { localDate, serverTzOffsetSec } from "@/lib/time/local-day";
 
 export type RecentAttempt = {
   id: number;
@@ -81,31 +82,45 @@ export function getLatestAttemptByProblem(
 }
 
 /**
- * Day streak = number of consecutive calendar days (in local time, ending today)
- * on which the user made at least one attempt. Today with zero attempts -> 0.
- * Today with attempts but yesterday empty -> 1.
+ * Streaks count consecutive calendar days (on the user's clock) with at least
+ * one attempt. current = the run ending today (0 if no attempt today);
+ * best = the longest run anywhere in history.
  */
-export function getDayStreak(db: Database.Database, userId: number): number {
+export function getStreaks(
+  db: Database.Database,
+  userId: number,
+  tzOffsetSec = serverTzOffsetSec(),
+): { current: number; best: number } {
   const rows = db
     .prepare(
-      `SELECT DISTINCT date(created_at, 'unixepoch', 'localtime') AS d
+      `SELECT DISTINCT date(created_at + ?, 'unixepoch') AS d
        FROM attempts
        WHERE user_id = ?
        ORDER BY d DESC`,
     )
-    .all(userId) as { d: string }[];
-  if (rows.length === 0) return 0;
+    .all(tzOffsetSec, userId) as { d: string }[];
   const days = rows.map((r) => r.d);
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-  if (days[0] !== todayStr) return 0;
-  let streak = 1;
-  for (let i = 1; i < days.length; i++) {
-    const prev = new Date(days[i - 1] + "T00:00:00");
-    const cur = new Date(days[i] + "T00:00:00");
-    const diff = Math.round((prev.getTime() - cur.getTime()) / 86_400_000);
-    if (diff === 1) streak++;
-    else break;
+  const startsToday = days[0] === localDate(Date.now(), tzOffsetSec);
+  let current = 0;
+  let best = 0;
+  let run = 0;
+  for (let i = 0; i < days.length; i++) {
+    const gap =
+      i > 0
+        ? Date.parse(days[i - 1] + "T00:00:00Z") - Date.parse(days[i] + "T00:00:00Z")
+        : 0;
+    run = gap === 86_400_000 ? run + 1 : 1;
+    if (run > best) best = run;
+    // run === i + 1 means no gap yet: still inside the newest run.
+    if (startsToday && run === i + 1) current = run;
   }
-  return streak;
+  return { current, best };
+}
+
+export function getDayStreak(
+  db: Database.Database,
+  userId: number,
+  tzOffsetSec = serverTzOffsetSec(),
+): number {
+  return getStreaks(db, userId, tzOffsetSec).current;
 }

@@ -32,11 +32,24 @@ export function AppShell({ children, problems, avatarInitials = "?" }: AppShellP
   const openCheatsheet = useCallback(() => setCheatsheetOpen(true), []);
   const closeCheatsheet = useCallback(() => setCheatsheetOpen(false), []);
 
+  // The panels belong to the problem workspace. Ask it with a cancelable
+  // event: it cancels the event when it toggles, so an un-cancelled event
+  // means there was no panel to toggle on this page.
   const onToggleCoach = useCallback(() => {
-    /* coach panel toggle wired in T7 */
+    if (window.dispatchEvent(new Event("lcn:toggle-coach", { cancelable: true }))) {
+      toast("Open a problem to use the coach", { kind: "info" });
+    }
   }, []);
   const onToggleAnalysis = useCallback(() => {
-    /* analysis panel toggle wired in T8 */
+    if (window.dispatchEvent(new Event("lcn:toggle-analysis", { cancelable: true }))) {
+      toast("Submit an accepted solution to see its analysis", { kind: "info" });
+    }
+  }, []);
+
+  // Tell the server the browser's UTC offset so "today", streaks and the
+  // heatmap follow the user's clock (see lib/time/local-day.ts).
+  useEffect(() => {
+    document.cookie = `tz=${-new Date().getTimezoneOffset()}; path=/; max-age=31536000; samesite=lax`;
   }, []);
 
   useEffect(() => {
@@ -44,6 +57,7 @@ export function AppShell({ children, problems, avatarInitials = "?" }: AppShellP
       const meta = e.metaKey || e.ctrlKey;
       if (meta && e.key.toLowerCase() === "k") {
         e.preventDefault();
+        e.stopPropagation(); // Monaco treats ⌘K as a chord prefix
         setPaletteOpen((v) => !v);
         return;
       }
@@ -56,7 +70,7 @@ export function AppShell({ children, problems, avatarInitials = "?" }: AppShellP
         return;
       }
 
-      // Leader sequence: g then d|p|i within 900ms
+      // Leader sequence: g then d|p|b|i within 900ms
       if (e.key === "g") {
         leaderRef.current = { time: Date.now() };
         return;
@@ -75,6 +89,12 @@ export function AppShell({ children, problems, avatarInitials = "?" }: AppShellP
           router.push("/problems");
           return;
         }
+        if (e.key === "b") {
+          e.preventDefault();
+          leaderRef.current = null;
+          router.push("/board");
+          return;
+        }
         if (e.key === "i") {
           e.preventDefault();
           leaderRef.current = null;
@@ -84,29 +104,10 @@ export function AppShell({ children, problems, avatarInitials = "?" }: AppShellP
         leaderRef.current = null;
       }
     }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    // Capture phase, so ⌘K also works while the cursor is in the code editor.
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
   }, [router]);
-
-  // Expose toast through window for legacy callers (already in ToastHost).
-  // Bind ⌘J / ⌘I to coach/analysis toggle hint toasts so cheatsheet hints work.
-  useEffect(() => {
-    function onMeta(e: KeyboardEvent) {
-      const meta = e.metaKey || e.ctrlKey;
-      if (!meta) return;
-      if (e.key.toLowerCase() === "j") {
-        e.preventDefault();
-        onToggleCoach();
-        toast("Toggled coach");
-      } else if (e.key.toLowerCase() === "i") {
-        e.preventDefault();
-        onToggleAnalysis();
-        toast("Toggled analysis");
-      }
-    }
-    window.addEventListener("keydown", onMeta);
-    return () => window.removeEventListener("keydown", onMeta);
-  }, [onToggleCoach, onToggleAnalysis]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>

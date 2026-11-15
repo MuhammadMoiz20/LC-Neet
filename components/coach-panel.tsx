@@ -146,7 +146,9 @@ export function CoachPanel({
           lastRunOutput,
         }),
       });
-      if (!res.body) throw new Error("no body");
+      if (!res.ok || !res.body) {
+        throw new Error(`request failed (${res.status})`);
+      }
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let pending = "";
@@ -162,6 +164,7 @@ export function CoachPanel({
             | { type: "delta"; text: string }
             | { type: "blocked"; text: string }
             | { type: "error"; text: string };
+          if (ev.type === "error") throw new Error(ev.text);
           if (ev.type === "delta" || ev.type === "blocked") {
             setMessages((msgs) => {
               const next = msgs.slice();
@@ -178,6 +181,21 @@ export function CoachPanel({
           }
         }
       }
+    } catch (err) {
+      // streaming ──► failed: say so in the reply bubble (keeping any partial
+      // text) instead of leaving it on "…" forever.
+      const reason = err instanceof Error ? err.message : "unknown error";
+      setMessages((msgs) => {
+        const next = msgs.slice();
+        const last = next[next.length - 1];
+        if (last?.role === "assistant") {
+          next[next.length - 1] = {
+            ...last,
+            content: `${last.content}${last.content ? "\n\n" : ""}_The coach couldn't reply: ${reason}. Try again._`,
+          };
+        }
+        return next;
+      });
     } finally {
       setStreaming(false);
     }
@@ -242,9 +260,6 @@ export function CoachPanel({
               <Icon name="sparkle" size={11} />
             </span>
             Coach
-          </span>
-          <span className="muted mono" style={{ fontSize: 10.5 }}>
-            haiku-4-5
           </span>
           <div style={{ flex: 1 }} />
           <span style={{ display: "inline-flex" }}>

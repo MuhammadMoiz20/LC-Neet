@@ -16,6 +16,8 @@ export function EditorToolbar({
   lang,
   setLang,
   hideSubmitInIv,
+  onRevisit,
+  revisitPending,
 }: {
   onRun: () => void;
   onStop: () => void;
@@ -29,6 +31,8 @@ export function EditorToolbar({
   lang: EditorLang;
   setLang: (l: EditorLang) => void;
   hideSubmitInIv?: boolean;
+  onRevisit?: () => void;
+  revisitPending?: boolean;
 }) {
   return (
     <div
@@ -81,6 +85,17 @@ export function EditorToolbar({
           </span>
           Analysis ready
         </button>
+      )}
+      {onRevisit && (
+        <Button
+          size="sm"
+          icon="clock"
+          kind="ghost"
+          onClick={onRevisit}
+          disabled={revisitPending}
+        >
+          Revisit soon
+        </Button>
       )}
       <Button size="sm" icon="reset" kind="ghost" onClick={onReset}>
         Reset

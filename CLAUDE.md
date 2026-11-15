@@ -56,3 +56,31 @@ agents `com.lcneet.{app,health,logrotate}`. That deployment was retired on
 2026-08-19; the checkout, database, and agents were removed. A snapshot of its
 database and its local auth-disabling patch are in `backups/` on Moiz's laptop
 (gitignored). A separate Math-Tutor app still runs on that machine on port 8723.
+
+## Checks and local runs
+
+- `npm run check` — typecheck + lint + unit tests (`tsc --noEmit`, `eslint`, `vitest run`).
+- `npx playwright test` — starts its own dev server on port 3210 against its own
+  database `data/e2e.db` (see `playwright.config.ts`). It never reuses a running server.
+- **WARNING:** `.env.local` (from `vercel env pull`) contains the production
+  `TURSO_DATABASE_URL`, so a plain `npm run dev` reads and writes production
+  data. The local override is: `TURSO_DATABASE_URL=data/app.db npm run dev`
+- Unit tests never touch `data/app.db`: `getDb()` with no argument reuses the
+  connection a test already opened (`lib/db.ts`).
+
+## State machines
+
+| Machine | File | States and transitions |
+| --- | --- | --- |
+| Python runner | `lib/pyodide/use-pyodide-runner.ts` | `loading → ready ⇄ running`; `cancel()` from any state terminates the worker and respawns (`→ loading`); worker crash or failed load `→ error`. A run queued while loading goes `loading → running`. |
+| Workspace activity | `app/(app)/problem/[slug]/problem-workspace.tsx` | `activity`: `null → run \| submit \| custom → null`. One at a time; nothing starts unless `activity === null` and the runner is ready. |
+| Interview session | same file | `active → expired` when the timer hits zero; the final attempt is auto-submitted once (waits for an in-flight run or a reloading runner). |
+| Analysis, client | `lib/analysis/use-analysis.ts` | `loading → running → settled`; `running → stalled` after 150 polls (2s each, the server's 300s budget); `rerun()` takes `settled`/`stalled` back to `running`. Polling only happens in `running`. |
+| Analysis, server rows | `lib/analysis/pipeline.ts`, `app/api/analysis/[attemptId]/route.ts` | Per kind: `(no row) → pending → done \| error`. POST starts it; starting is a no-op once rows exist, `?force=1` resets every kind to `pending`. The LLM calls run in `after()`. |
+| Coach reply | `components/coach-panel.tsx` | `idle → streaming → idle`. A failure ends the same way, with the reason appended to the reply bubble. Sending is blocked while streaming. |
+| Login | `app/login/page.tsx` | `idle → submitting → (redirect) \| error → submitting …` |
+| Problem lifecycle | `lib/lifecycle/stage.ts` | Derived, never stored. First match wins: review due or `interval_days <= 1` → `revisit`; no attempt → `todo`; not accepted → `attempting`; `interval_days >= 21` → `mastered`; else `solved`. "Due" means due by the end of the user's day (`endOfLocalDay`). `lib/lifecycle/board.ts` additionally requires accepted passes on 3 separate days for `mastered`, and `submitAttempt` only advances the schedule when the review is due. The only manual transition is "Revisit soon" (`markRevisit` sets `interval_days = 1`, due tomorrow). |
+
+- `lcn:toggle-coach` / `lcn:toggle-analysis`: cancelable window events the app shell (`components/app-shell/app-shell.tsx`, for the command palette) dispatches; the workspace cancels one when it toggles its panel, so an un-cancelled event means "no panel on this page" and the shell shows a toast.
+- `tz` cookie: the app shell stores the browser's UTC offset (minutes east of UTC); `lib/time/local-day.ts` reads it so "today", streaks and the heatmap follow the user's clock, falling back to the server's offset.
+- `lcn-draft-<slug>`: the per-problem code draft in localStorage, restored on return. Interview rounds don't read or write it.

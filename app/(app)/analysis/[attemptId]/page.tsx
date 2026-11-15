@@ -1,7 +1,7 @@
 import { requireUserId } from "@/lib/auth/current-user";
 import { getDb } from "@/lib/db";
 import { getByAttempt } from "@/lib/analysis/repo";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { AnalysisView } from "./analysis-view";
 
 export const dynamic = "force-dynamic";
@@ -25,9 +25,15 @@ export default async function AnalysisPage({
 }) {
   const userId = await requireUserId();
   const { attemptId } = await params;
+  const db = getDb();
+  if (attemptId === "latest") {
+    const last = db
+      .prepare(`SELECT id FROM attempts WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT 1`)
+      .get(userId) as { id: number } | undefined;
+    redirect(last ? `/analysis/${last.id}` : "/");
+  }
   const id = Number(attemptId);
   if (!Number.isFinite(id)) notFound();
-  const db = getDb();
   const ctx = db
     .prepare(
       `SELECT a.id, a.problem_id, a.status, a.runtime_ms, a.created_at,

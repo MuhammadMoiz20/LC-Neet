@@ -100,6 +100,51 @@ describe("analysis/pipeline", () => {
     );
   });
 
+  it("a second start is a no-op while a run is in flight; force restarts it", async () => {
+    const { db, ctx } = await setup();
+    upsertAnalysis(db, {
+      attempt_id: ctx.attemptId,
+      kind: "grade",
+      content_md: "",
+      status: "pending",
+    });
+    vi.mocked(runOne).mockImplementation(async ({ kind }) => ({
+      kind,
+      content_md: `fresh ${kind}`,
+      status: "done" as const,
+    }));
+
+    await runPipeline(db, ctx);
+    expect(vi.mocked(runOne)).not.toHaveBeenCalled();
+
+    await runPipeline(db, ctx, { force: true });
+    expect(vi.mocked(runOne)).toHaveBeenCalledTimes(6);
+    expect(getByAttempt(db, ctx.attemptId).every((r) => r.status === "done")).toBe(true);
+  });
+
+  it("a start takes over a run whose pending rows outlived the run budget", async () => {
+    const { db, ctx } = await setup();
+    upsertAnalysis(db, {
+      attempt_id: ctx.attemptId,
+      kind: "grade",
+      content_md: "",
+      status: "pending",
+    });
+    db.prepare("UPDATE analyses SET created_at = created_at - 301 WHERE attempt_id = ?").run(
+      ctx.attemptId,
+    );
+    vi.mocked(runOne).mockImplementation(async ({ kind }) => ({
+      kind,
+      content_md: `fresh ${kind}`,
+      status: "done" as const,
+    }));
+
+    await runPipeline(db, ctx);
+
+    expect(vi.mocked(runOne)).toHaveBeenCalledTimes(6);
+    expect(getByAttempt(db, ctx.attemptId).every((r) => r.status === "done")).toBe(true);
+  });
+
   it("one kind erroring leaves others done", async () => {
     const { db, ctx } = await setup();
     vi.mocked(runOne).mockImplementation(async ({ kind }) => {

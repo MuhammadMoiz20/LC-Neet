@@ -4,7 +4,7 @@ import { listProblems } from "@/lib/problems/repo";
 import {
   getSolvedProblemIds,
   getRecentAttempts,
-  getDayStreak,
+  getStreaks,
 } from "@/lib/stats/repo";
 import { requireUserId } from "@/lib/auth/current-user";
 import { getOrCreateDaily } from "@/lib/daily/repo";
@@ -19,6 +19,7 @@ import { buildHeatmap } from "@/lib/stats/heatmap";
 import { getWeakPatterns } from "@/lib/stats/weak-patterns";
 import { DashboardView } from "@/components/dashboard/dashboard-view";
 import type { Problem } from "@/lib/problems/types";
+import { endOfLocalDay, localDate, userTzOffsetSec } from "@/lib/time/local-day";
 
 export const dynamic = "force-dynamic";
 
@@ -31,8 +32,11 @@ function timeAgo(unixSec: number, nowSec: number): string {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-function greetingTimeOfDay(): "morning" | "afternoon" | "evening" {
-  const h = new Date().getUTCHours();
+function greetingTimeOfDay(
+  now: number,
+  tzOffsetSec: number,
+): "morning" | "afternoon" | "evening" {
+  const h = new Date(now + tzOffsetSec * 1000).getUTCHours();
   if (h < 12) return "morning";
   if (h < 17) return "afternoon";
   return "evening";
@@ -68,13 +72,14 @@ export default async function Home() {
   const problems = listProblems(db);
   const solved = getSolvedProblemIds(db, userId);
   const recent = getRecentAttempts(db, userId, 12);
-  const streakCount = getDayStreak(db, userId);
+  const tz = await userTzOffsetSec();
+  const streaks = getStreaks(db, userId, tz);
 
   // Server component: Date.now() is intentionally per-request (not a hook).
   // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
   const nowSec = Math.floor(now / 1000);
-  const today = new Date(now).toISOString().slice(0, 10);
+  const today = localDate(now, tz);
   const daily = getOrCreateDaily(db, userId, today, () =>
     pickDaily(db, userId, today, now),
   );
@@ -93,7 +98,7 @@ export default async function Home() {
     }
   }
   const dailyProblem = problems.find((p) => p.id === daily.problem_id);
-  const due = dueReviews(db, userId, now, 5);
+  const due = dueReviews(db, userId, endOfLocalDay(now, tz), 5);
 
   const problemById = new Map<number, Problem>(problems.map((p) => [p.id, p]));
 
@@ -113,7 +118,7 @@ export default async function Home() {
   }));
 
   // Heatmap.
-  const heatmap = buildHeatmap(db, userId, nowSec);
+  const heatmap = buildHeatmap(db, userId, nowSec, tz);
 
   // Recent analyses (always link to /analysis/[attemptId]).
   const recentItems = recent.map((a) => ({
@@ -147,14 +152,11 @@ export default async function Home() {
     if (r) {
       const p = problemById.get(r.problem_id);
       if (p) {
-        const days = Math.max(
-          1,
-          Math.floor((nowSec - r.due_at) / 86400) + r.interval_days,
-        );
+        const overdueDays = Math.floor((now - r.due_at) / 86_400_000);
         doNext = {
           problem: p,
           why: "Spaced repetition: due for review.",
-          spaced: `${days}d since last try`,
+          spaced: overdueDays > 0 ? `${overdueDays}d overdue` : "due today",
         };
       }
     }
@@ -215,7 +217,9 @@ export default async function Home() {
         difficulty: doNext.problem.difficulty,
         patternName: getPatternName(topicToPatternId(doNext.problem.topic)),
         spaced: doNext.spaced,
-        est: "~22 min",
+        est: { Easy: "~15 min", Medium: "~25 min", Hard: "~40 min" }[
+          doNext.problem.difficulty
+        ],
         why: doNext.why,
         lastAttempt,
         accuracy,
@@ -251,25 +255,23 @@ export default async function Home() {
     : {};
 
   // Streak: today flag = there is at least one attempt today.
-  const todayLocalStr = new Date().toLocaleDateString("en-CA");
-  const hasAttemptToday = recent.some((a) => {
-    const d = new Date(a.created_at * 1000).toLocaleDateString("en-CA");
-    return d === todayLocalStr;
-  });
+  const hasAttemptToday = recent.some(
+    (a) => localDate(a.created_at * 1000, tz) === today,
+  );
 
   return (
     <DashboardView
       greetingName={nameFromEmail(email)}
-      greetingTime={greetingTimeOfDay()}
+      greetingTime={greetingTimeOfDay(now, tz)}
       totalSolved={solved.size}
-      totalProblems={150}
+      totalProblems={problems.length}
       patterns={patternRailItems}
       doNext={doNextProps}
       heatmap={heatmap}
       recent={recentItems}
       streak={{
-        current: streakCount,
-        best: Math.max(streakCount, 0),
+        current: streaks.current,
+        best: streaks.best,
         today: hasAttemptToday,
       }}
       resume={resumeProps}

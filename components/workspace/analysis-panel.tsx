@@ -2,8 +2,11 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Icon, IconButton, Pill, toast } from "@/components/ui";
-import type { Analysis } from "@/lib/analysis/repo";
-import { AnalysisContent } from "@/components/analysis/analysis-content";
+import { useAnalysis } from "@/lib/analysis/use-analysis";
+import {
+  AnalysisContent,
+  AnalysisStalled,
+} from "@/components/analysis/analysis-content";
 
 type AttemptSummary = {
   id: number;
@@ -32,45 +35,9 @@ export function AnalysisPanel({
   problemSlug?: string;
   onClose: () => void;
 }) {
-  const [rows, setRows] = useState<Analysis[]>([]);
+  const { rows, phase, rerun } = useAnalysis(attemptId);
   const [history, setHistory] = useState<AttemptSummary[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
-
-  const incomplete =
-    rows.length === 0 || rows.some((r) => r.status === "pending");
-
-  useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      try {
-        const res = await fetch(`/api/analysis/${attemptId}`, {
-          cache: "no-store",
-        });
-        if (!res.ok) return;
-        const data = (await res.json()) as { rows: Analysis[] };
-        if (!cancelled) setRows(data.rows);
-      } catch {}
-    }
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [attemptId]);
-
-  useEffect(() => {
-    if (!incomplete) return;
-    const t = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/analysis/${attemptId}`, {
-          cache: "no-store",
-        });
-        if (!res.ok) return;
-        const data = (await res.json()) as { rows: Analysis[] };
-        setRows(data.rows);
-      } catch {}
-    }, 2000);
-    return () => clearInterval(t);
-  }, [attemptId, incomplete]);
 
   useEffect(() => {
     let cancelled = false;
@@ -178,6 +145,7 @@ export function AnalysisPanel({
           padding: "14px 16px 24px",
         }}
       >
+        {phase === "stalled" && <AnalysisStalled onRerun={rerun} />}
         <AnalysisContent
           rows={rows}
           showInterviewDebrief={showInterviewDebrief}

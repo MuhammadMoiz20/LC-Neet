@@ -95,7 +95,7 @@ let cachedPath: string | null = null;
 /**
  * Remote Turso is used when TURSO_DATABASE_URL is set (serverless deploys,
  * where the filesystem is read-only and ephemeral). Otherwise we open a local
- * SQLite file, which is what dev, tests, and the Mac Studio box do.
+ * SQLite file, which is what dev and tests do.
  */
 function isRemote(target: string): boolean {
   return target.startsWith("libsql://") || target.startsWith("https://");
@@ -158,46 +158,22 @@ function wrapPrepare(db: Database.Database, remote: boolean): void {
   }) as typeof db.prepare;
 }
 
-export function getDb(filePath = defaultTarget()): Database.Database {
-  if (cached && cachedPath === filePath && cached.open) return cached;
-  const db = open(filePath);
-  wrapPrepare(db, isRemote(filePath));
-  if (!isRemote(filePath)) {
-    db.pragma("journal_mode = WAL");
-    db.pragma("foreign_keys = ON");
-  }
-  db.exec(SCHEMA);
-  const cols = db.prepare("PRAGMA table_info(problems)").all() as { name: string }[];
-  if (!cols.some((c) => c.name === "method_name")) {
+/**
+ * Bring databases created by older schemas up to date. Reads every table's
+ * DDL in one query — on remote Turso each statement is a network round-trip,
+ * and this runs on every cold start.
+ */
+function migrate(db: Database.Database): void {
+  const rows = db
+    .prepare(`SELECT name, sql FROM sqlite_master WHERE type='table'`)
+    .all() as { name: string; sql: string }[];
+  const ddl = new Map(rows.map((r) => [r.name, r.sql]));
+
+  if (!ddl.get("problems")?.includes("method_name")) {
     db.exec("ALTER TABLE problems ADD COLUMN method_name TEXT NOT NULL DEFAULT ''");
   }
-  const chatModeCheck = db
-    .prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='chat_messages'`)
-    .get() as { sql: string } | undefined;
-  if (chatModeCheck && !chatModeCheck.sql.includes("'style'")) {
-    db.exec(`
-      BEGIN;
-      ALTER TABLE chat_messages RENAME TO chat_messages_old;
-      CREATE TABLE chat_messages (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL REFERENCES users(id),
-        problem_id INTEGER NOT NULL REFERENCES problems(id),
-        role TEXT NOT NULL CHECK(role IN ('user','assistant')),
-        content TEXT NOT NULL,
-        mode TEXT NOT NULL CHECK(mode IN ('socratic','hints','style')),
-        created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
-      );
-      INSERT INTO chat_messages (id, user_id, problem_id, role, content, mode, created_at)
-        SELECT id, user_id, problem_id, role, content, mode, created_at FROM chat_messages_old;
-      DROP TABLE chat_messages_old;
-      CREATE INDEX IF NOT EXISTS chat_user_problem ON chat_messages(user_id, problem_id, created_at);
-      COMMIT;
-    `);
-  }
-  const chatModeCheck2 = db.prepare(
-    `SELECT sql FROM sqlite_master WHERE type='table' AND name='chat_messages'`,
-  ).get() as { sql: string } | undefined;
-  if (chatModeCheck2 && !chatModeCheck2.sql.includes("'interview'")) {
+  const chatSql = ddl.get("chat_messages");
+  if (chatSql && !chatSql.includes("'interview'")) {
     db.exec(`
       BEGIN;
       ALTER TABLE chat_messages RENAME TO chat_messages_old;
@@ -217,13 +193,10 @@ export function getDb(filePath = defaultTarget()): Database.Database {
       COMMIT;
     `);
   }
-  const analysesKindCheck = db.prepare(
-    `SELECT sql FROM sqlite_master WHERE type='table' AND name='analyses'`,
-  ).get() as { sql: string } | undefined;
+  const analysesSql = ddl.get("analyses");
   if (
-    analysesKindCheck &&
-    (!analysesKindCheck.sql.includes("'interview_debrief'") ||
-      !analysesKindCheck.sql.includes("'grade'"))
+    analysesSql &&
+    (!analysesSql.includes("'interview_debrief'") || !analysesSql.includes("'grade'"))
   ) {
     db.exec(`
       BEGIN;
@@ -244,6 +217,25 @@ export function getDb(filePath = defaultTarget()): Database.Database {
       COMMIT;
     `);
   }
+}
+
+/**
+ * The process-wide connection. Called with no argument it returns whichever
+ * connection is already open, so a test or script that opened a specific file
+ * keeps every later `getDb()` (routes, actions) on that same file instead of
+ * silently falling through to the dev database.
+ */
+export function getDb(explicitPath?: string): Database.Database {
+  if (cached?.open && (!explicitPath || cachedPath === explicitPath)) return cached;
+  const filePath = explicitPath ?? defaultTarget();
+  const db = open(filePath);
+  wrapPrepare(db, isRemote(filePath));
+  if (!isRemote(filePath)) {
+    db.pragma("journal_mode = WAL");
+    db.pragma("foreign_keys = ON");
+  }
+  db.exec(SCHEMA);
+  migrate(db);
   cached = db;
   cachedPath = filePath;
   return db;

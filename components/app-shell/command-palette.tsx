@@ -52,21 +52,18 @@ export function CommandPalette({
     const navs: Item[] = [
       { id: "n-d", group: "Navigate", icon: "home", label: "Dashboard", hint: "g d", run: () => router.push("/") },
       { id: "n-p", group: "Navigate", icon: "list", label: "All problems", hint: "g p", run: () => router.push("/problems") },
+      { id: "n-b", group: "Navigate", icon: "trend", label: "Progress board", hint: "g b", run: () => router.push("/board") },
       { id: "n-i", group: "Navigate", icon: "briefcase", label: "Interview mode", hint: "g i", run: () => router.push("/interview") },
       { id: "n-a", group: "Navigate", icon: "spark", label: "Latest analysis", hint: "", run: () => router.push("/analysis/latest") },
     ];
     const acts: Item[] = [
       { id: "a-th", group: "Actions", icon: "sun", label: "Toggle theme", hint: "", run: toggleTheme },
-      { id: "a-co", group: "Actions", icon: "sparkle", label: "Toggle coach panel", hint: "⌘J", run: () => { onToggleCoach(); toast("Toggled coach"); } },
-      { id: "a-an", group: "Actions", icon: "beaker", label: "Toggle analysis panel", hint: "⌘I", run: () => { onToggleAnalysis(); toast("Toggled analysis"); } },
+      { id: "a-co", group: "Actions", icon: "sparkle", label: "Toggle coach panel", hint: "⌘J", run: onToggleCoach },
+      { id: "a-an", group: "Actions", icon: "beaker", label: "Toggle analysis panel", hint: "⌘I", run: onToggleAnalysis },
       { id: "a-so", group: "Actions", icon: "x", label: "Sign out", hint: "", run: () => { void signOut({ callbackUrl: "/login" }); } },
     ];
     const ai: Item[] = [
-      { id: "ai-1", group: "Ask the coach", icon: "sparkle", label: "Explain my last submission", hint: "↵", run: () => { router.push("/problem/3sum"); toast("Coach: Explaining last submission…", { kind: "success" }); } },
-      { id: "ai-2", group: "Ask the coach", icon: "sparkle", label: "Give me a hint", hint: "↵", run: () => { router.push("/problem/3sum"); toast("Coach: Hint queued", { kind: "success" }); } },
-      { id: "ai-3", group: "Ask the coach", icon: "sparkle", label: "Quiz me on Sliding Window", hint: "↵", run: () => { router.push("/problem/3sum"); toast("Coach: Sliding-window quiz queued", { kind: "success" }); } },
       { id: "ai-4", group: "Ask the coach", icon: "target", label: "What should I do next?", hint: "↵", run: () => { router.push("/"); toast('Pulled "Do next" recommendation', { kind: "success" }); } },
-      { id: "ai-5", group: "Ask the coach", icon: "sparkle", label: "Review my code", hint: "↵", run: () => { router.push("/problem/3sum"); toast("Coach: Code review queued", { kind: "success" }); } },
     ];
     const probs: Item[] = problems.map((p) => ({
       id: `p-${p.slug}`,

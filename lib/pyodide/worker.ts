@@ -14,21 +14,23 @@ type PyodideAPI = {
   globals: { get: (name: string) => unknown };
 };
 
-let harnessSource: string | null = null;
 let initPromise: Promise<void> | null = null;
 
 async function init() {
   if (initPromise) return initPromise;
   initPromise = (async () => {
+    // Fetch the harness while Pyodide downloads instead of after it. Never
+    // cached, so a deploy can't leave a stale harness behind.
+    const harness = fetch(`/api/harness?t=${Date.now()}`, {
+      cache: "no-store",
+    }).then((res) => {
+      if (!res.ok) throw new Error(`harness failed to load (${res.status})`);
+      return res.text();
+    });
+    harness.catch(() => {}); // surfaced by the await below, not as an unhandled rejection
     self.importScripts(`${PYODIDE_CDN}pyodide.js`);
     self.pyodide = await self.loadPyodide!({ indexURL: PYODIDE_CDN });
-    if (!harnessSource) {
-      const res = await fetch(`/api/harness?t=${Date.now()}`, {
-        cache: "no-store",
-      });
-      harnessSource = await res.text();
-    }
-    await self.pyodide.runPythonAsync(harnessSource);
+    await self.pyodide.runPythonAsync(await harness);
   })();
   return initPromise;
 }

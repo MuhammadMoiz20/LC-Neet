@@ -14,10 +14,13 @@ export function PromptRail({
   problem,
   collapsed,
   onToggle,
+  hideHints = false,
 }: {
   problem: Problem;
   collapsed: boolean;
   onToggle: () => void;
+  /** Interview mode: show the statement, hide the pattern, topic and solution video. */
+  hideHints?: boolean;
 }) {
   const patternId = topicToPatternId(problem.topic);
   const patternName = getPatternName(patternId);
@@ -83,8 +86,12 @@ export function PromptRail({
           className="row mono"
           style={{ gap: 6, fontSize: 11.5, color: "var(--text-muted)" }}
         >
-          {patternName}{" "}
-          <span style={{ color: "var(--text-faint)" }}>›</span>{" "}
+          {!hideHints && (
+            <>
+              {patternName}{" "}
+              <span style={{ color: "var(--text-faint)" }}>›</span>{" "}
+            </>
+          )}
           <span style={{ color: "var(--text)" }}>{problem.title}</span>
         </span>
         <div style={{ flex: 1 }} />
@@ -93,7 +100,7 @@ export function PromptRail({
       <div style={{ padding: "18px 18px 24px" }}>
         <div className="row" style={{ gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
           <Pill kind={difficultyKind(problem.difficulty)}>{problem.difficulty}</Pill>
-          <Pill>{problem.topic}</Pill>
+          {!hideHints && <Pill>{problem.topic}</Pill>}
           <a
             href={`https://leetcode.com/problems/${problem.slug}/`}
             target="_blank"
@@ -179,7 +186,7 @@ export function PromptRail({
             {problem.description_md}
           </ReactMarkdown>
         </div>
-        <YouTubeEmbed url={problem.neetcode_video_url} />
+        {!hideHints && <YouTubeEmbed url={problem.neetcode_video_url} />}
       </div>
     </aside>
   );

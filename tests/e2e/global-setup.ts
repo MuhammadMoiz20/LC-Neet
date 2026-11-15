@@ -19,7 +19,7 @@ export default async function globalSetup(config: FullConfig) {
   const browser = await chromium.launch();
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
-  const baseURL = config.projects[0].use.baseURL ?? "http://localhost:3000";
+  const baseURL = config.projects[0].use.baseURL!;
   await page.goto(`${baseURL}/login`);
   await page.getByPlaceholder("Email").fill("e2e@example.com");
   await page.getByPlaceholder("Password").fill("e2e-password-1");

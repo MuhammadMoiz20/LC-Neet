@@ -33,7 +33,7 @@ const HINTS: Record<string, string> = {
   bits: "XOR self-cancels — use it as a free toggle.",
 };
 
-type AttemptRow = { topic: string; status: string };
+type TopicCountRow = { topic: string; passed: number; total: number };
 
 export function getWeakPatterns(
   db: Database.Database,
@@ -41,18 +41,21 @@ export function getWeakPatterns(
 ): WeakPattern[] {
   const rows = db
     .prepare(
-      `SELECT p.topic AS topic, a.status AS status
+      `SELECT p.topic AS topic,
+              SUM(a.status = 'passed') AS passed,
+              COUNT(*) AS total
        FROM attempts a JOIN problems p ON p.id = a.problem_id
-       WHERE a.user_id = ?`,
+       WHERE a.user_id = ?
+       GROUP BY p.topic`,
     )
-    .all(userId) as AttemptRow[];
+    .all(userId) as TopicCountRow[];
 
   const agg = new Map<string, { passed: number; failed: number }>();
   for (const r of rows) {
     const id = topicToPatternId(r.topic);
     const cur = agg.get(id) ?? { passed: 0, failed: 0 };
-    if (r.status === "passed") cur.passed += 1;
-    else cur.failed += 1;
+    cur.passed += r.passed;
+    cur.failed += r.total - r.passed;
     agg.set(id, cur);
   }
 

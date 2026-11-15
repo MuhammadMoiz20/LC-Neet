@@ -1,4 +1,5 @@
 import type Database from "libsql";
+import { listProblems } from "../problems/repo";
 
 export type ProblemMeta = {
   id: number;
@@ -20,21 +21,8 @@ export function getProblemMeta(
   db: Database.Database,
   problemId: number,
 ): ProblemMeta | null {
-  const row = db
-    .prepare(
-      `SELECT id, slug, title, difficulty, topic, description_md
-       FROM problems WHERE id = ?`,
-    )
-    .get(problemId) as
-    | {
-        id: number;
-        slug: string;
-        title: string;
-        difficulty: string;
-        topic: string;
-        description_md: string;
-      }
-    | undefined;
+  // The catalog is cached per connection, so this costs no query.
+  const row = listProblems(db).find((p) => p.id === problemId);
   if (!row) return null;
   return {
     id: row.id,

@@ -1,11 +1,12 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import type { Analysis } from "@/lib/analysis/repo";
 import { Icon } from "@/components/ui";
+import { useAnalysis } from "@/lib/analysis/use-analysis";
 import {
   AnalysisContent,
   AnalysisHeroPill,
+  AnalysisStalled,
   parseGrade,
 } from "@/components/analysis/analysis-content";
 
@@ -43,53 +44,13 @@ export function AnalysisView({
   createdAt: number;
   initial: Analysis[];
 }) {
-  const [rows, setRows] = useState<Analysis[]>(initial);
-  const [rerunning, setRerunning] = useState(false);
+  const { rows, phase, rerun } = useAnalysis(attemptId, initial);
+  const busy = phase === "loading" || phase === "running";
 
   const showInterviewDebrief = rows.some((r) => r.kind === "interview_debrief");
-  const expectedKinds = showInterviewDebrief ? 7 : 6;
   const gradeRow = rows.find((r) => r.kind === "grade");
   const grade =
     gradeRow && gradeRow.status === "done" ? parseGrade(gradeRow.content_md) : null;
-  const incomplete =
-    rerunning ||
-    rows.length < expectedKinds ||
-    rows.some((r) => r.status === "pending");
-
-  async function rerun() {
-    if (rerunning) return;
-    setRerunning(true);
-    setRows((prev) =>
-      prev.map((r) => ({ ...r, status: "pending" as const, content_md: "" })),
-    );
-    try {
-      const res = await fetch(`/api/analysis/${attemptId}?force=1`, {
-        method: "POST",
-      });
-      if (res.ok) {
-        const data = (await res.json()) as { rows: Analysis[] };
-        setRows(data.rows);
-      }
-    } catch {
-    } finally {
-      setRerunning(false);
-    }
-  }
-
-  useEffect(() => {
-    if (!incomplete) return;
-    const t = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/analysis/${attemptId}`, {
-          cache: "no-store",
-        });
-        if (!res.ok) return;
-        const data = (await res.json()) as { rows: Analysis[] };
-        setRows(data.rows);
-      } catch {}
-    }, 2000);
-    return () => clearInterval(t);
-  }, [attemptId, incomplete]);
 
   const verdict = statusToVerdict(attemptStatus);
 
@@ -157,6 +118,7 @@ export function AnalysisView({
         >
           <div className="col" style={{ gap: 18 }}>
             <div className="glass" style={{ padding: 22, borderRadius: 12 }}>
+              {phase === "stalled" && <AnalysisStalled onRerun={rerun} />}
               <AnalysisContent
                 rows={rows}
                 showInterviewDebrief={showInterviewDebrief}
@@ -204,12 +166,12 @@ export function AnalysisView({
                 <button
                   type="button"
                   onClick={rerun}
-                  disabled={rerunning}
+                  disabled={busy}
                   className="row btn btn-sm"
                   style={{ justifyContent: "space-between" }}
                 >
-                  <span>{rerunning ? "Rerunning…" : "Rerun analysis"}</span>
-                  <Icon name={rerunning ? "spark" : "reset"} size={12} />
+                  <span>{busy ? "Analyzing…" : "Rerun analysis"}</span>
+                  <Icon name={busy ? "spark" : "reset"} size={12} />
                 </button>
                 <Link
                   href={`/problem/${problemSlug}`}

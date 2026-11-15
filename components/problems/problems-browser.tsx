@@ -153,6 +153,13 @@ export function ProblemsBrowser({ rows }: ProblemsBrowserProps) {
             <span className="mono">{filtered.length}</span> of {rows.length}
           </span>
           <div style={{ flex: 1 }} />
+          <Link
+            href="/board"
+            className="btn btn-sm"
+            style={{ textDecoration: "none" }}
+          >
+            Progress board
+          </Link>
           <Button
             size="sm"
             icon="plus"

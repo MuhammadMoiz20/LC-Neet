@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db";
 import { requireUserId } from "@/lib/auth/current-user";
 import { saveMessage, listMessages, type ChatMode } from "@/lib/chat/repo";
 import { streamCoach } from "@/lib/agent/stream";
+import { getProblemMeta } from "@/lib/agent/tools";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -44,6 +45,9 @@ export async function POST(req: NextRequest) {
   const problemId = body.problemId!;
   const mode = body.mode as ChatMode;
 
+  // Read history first: the prompt appends the new message itself.
+  const history = listMessages(db, userId, problemId);
+
   saveMessage(db, {
     user_id: userId,
     problem_id: problemId,
@@ -51,8 +55,6 @@ export async function POST(req: NextRequest) {
     content: body.userMessage,
     mode,
   });
-
-  const history = listMessages(db, userId, problemId);
 
   const encoder = new TextEncoder();
   let assistantBuffer = "";
@@ -68,6 +70,7 @@ export async function POST(req: NextRequest) {
           lastRunOutput: body.lastRunOutput ?? null,
           history,
           userMessage: body.userMessage!,
+          problem: getProblemMeta(db, problemId),
         })) {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(ev)}\n\n`));
           if (ev.type === "delta") assistantBuffer += ev.text;

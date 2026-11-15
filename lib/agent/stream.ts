@@ -1,6 +1,6 @@
 import type { ChatMessage, ChatMode } from "../chat/repo";
 import { getDb } from "../db";
-import { getProblemMeta, getUserHistory } from "./tools";
+import { getProblemMeta, getUserHistory, type ProblemMeta } from "./tools";
 import { systemPrompt } from "./prompts";
 import { looksLikeFullSolution } from "./filter";
 import { streamChat, type ToolDef } from "../llm/openrouter";
@@ -18,14 +18,21 @@ export type StreamCoachInput = {
   lastRunOutput: string | null;
   history: ChatMessage[];
   userMessage: string;
+  /** The problem being worked on; omitted, the model must fetch it via a tool. */
+  problem?: ProblemMeta | null;
 };
 
 const BLOCKED_MESSAGE =
   "I can't share a full solution. Want a hint about the data structure or invariant instead?";
 
 function buildContextHeader(input: StreamCoachInput): string {
+  // Stating the problem here saves the model a tool call (a full extra LLM
+  // round-trip) before it can answer; the tool stays as a fallback.
+  const meta = input.problem;
   const parts = [
-    `Problem id: ${input.problemId}. Use the get_problem_meta tool for title/topic/description.`,
+    meta
+      ? `Problem ${meta.id}: ${meta.title} (${meta.difficulty}, ${meta.topic})\n${meta.description_excerpt}`
+      : `Problem id: ${input.problemId}. Use the get_problem_meta tool for title/topic/description.`,
     `Current code:\n\`\`\`python\n${input.code || "(empty)"}\n\`\`\``,
   ];
   if (input.lastRunOutput) {

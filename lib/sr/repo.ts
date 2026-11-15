@@ -36,6 +36,13 @@ export function dueReviews(
   ).all(userId, now, limit) as ReviewRow[];
 }
 
+export function listReviews(db: Database.Database, userId: number): ReviewRow[] {
+  return db.prepare(
+    `SELECT id, user_id, problem_id, due_at, ease, interval_days
+     FROM review_queue WHERE user_id = ?`,
+  ).all(userId) as ReviewRow[];
+}
+
 export function getReviewState(
   db: Database.Database,
   userId: number,

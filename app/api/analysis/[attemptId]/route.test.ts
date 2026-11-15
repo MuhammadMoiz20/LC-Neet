@@ -8,6 +8,12 @@ import { seedProblems } from "@/lib/seed";
 import { createUser } from "@/lib/auth/users";
 
 vi.mock("@/lib/auth/current-user", () => ({ requireUserId: vi.fn() }));
+// `after` throws outside a real request scope; the route only uses it to keep
+// the invocation alive, so a no-op is faithful here.
+vi.mock("next/server", async () => ({
+  ...(await vi.importActual<typeof import("next/server")>("next/server")),
+  after: vi.fn(),
+}));
 vi.mock("@/lib/analysis/pipeline", () => ({ runPipeline: vi.fn() }));
 
 import { requireUserId } from "@/lib/auth/current-user";

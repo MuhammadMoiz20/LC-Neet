@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import fs from "node:fs";
 import { getDb, __resetDbCache } from "../db";
 import { seedProblems } from "../seed";
@@ -8,6 +8,7 @@ import {
   getSolvedProblemIds,
   getRecentAttempts,
   getDayStreak,
+  getStreaks,
 } from "./repo";
 
 const TEST_DB = "data/stats-test.db";
@@ -56,6 +57,44 @@ describe("stats/repo", () => {
       "INSERT INTO attempts (user_id, problem_id, code, status, runtime_ms, mode, created_at) VALUES (?, 1, 'x', 'passed', 1, 'run', ?)",
     ).run(userId, today - 3 * day);
     expect(getDayStreak(db, userId)).toBe(2);
+  });
+
+  it("getDayStreak draws day boundaries on the user's clock, not UTC", async () => {
+    const { db, userId } = await setup();
+    const at = (iso: string) => Math.floor(Date.parse(iso) / 1000);
+    const insert = db.prepare(
+      "INSERT INTO attempts (user_id, problem_id, code, status, runtime_ms, mode, created_at) VALUES (?, 1, 'x', 'passed', 1, 'run', ?)",
+    );
+    insert.run(userId, at("2026-06-10T00:30:00Z"));
+    insert.run(userId, at("2026-06-09T12:00:00Z"));
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-06-10T01:00:00Z"));
+    try {
+      // In UTC these are two different days...
+      expect(getDayStreak(db, userId, 0)).toBe(2);
+      // ...but five hours west it is still the evening of the 9th: one day.
+      expect(getDayStreak(db, userId, -5 * 3600)).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("getStreaks reports the longest past run as best, separate from the current run", async () => {
+    const { db, userId } = await setup();
+    const at = (iso: string) => Math.floor(Date.parse(iso) / 1000);
+    const insert = db.prepare(
+      "INSERT INTO attempts (user_id, problem_id, code, status, runtime_ms, mode, created_at) VALUES (?, 1, 'x', 'passed', 1, 'run', ?)",
+    );
+    for (const d of ["2026-06-10", "2026-06-11", "2026-06-12", "2026-06-20"]) {
+      insert.run(userId, at(`${d}T12:00:00Z`));
+    }
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-06-20T13:00:00Z"));
+    try {
+      expect(getStreaks(db, userId, 0)).toEqual({ current: 1, best: 3 });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("getDayStreak returns 0 when no attempts today or yesterday", async () => {

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import fs from "node:fs";
 import { getDb, __resetDbCache } from "./db";
 import { seedProblems } from "./seed";
+import { invalidateProblemCache } from "./problems/repo";
 
 const TEST_DB = "data/seed-test.db";
 
@@ -27,6 +28,25 @@ describe("seedProblems", () => {
     seedProblems(db);
     const count = (db.prepare("SELECT COUNT(*) as c FROM problems").get() as { c: number }).c;
     expect(count).toBe(150);
+    db.close();
+  });
+});
+
+describe("seedProblems change detection", () => {
+  it("rewrites a row that drifted from the JSON and leaves the rest alone", () => {
+    __resetDbCache();
+    if (fs.existsSync(TEST_DB)) fs.unlinkSync(TEST_DB);
+    const db = getDb(TEST_DB);
+    seedProblems(db);
+    db.prepare("UPDATE problems SET title = 'stale' WHERE id = 1").run();
+    db.prepare("UPDATE problems SET slug = 'kept-slug' WHERE id = 2").run();
+    invalidateProblemCache(db); // direct writes bypass the catalog cache
+    seedProblems(db);
+    const title = (db.prepare("SELECT title FROM problems WHERE id = 1").get() as { title: string }).title;
+    expect(title).not.toBe("stale");
+    // slug is not a seeded column, so an untouched row is never rewritten
+    const slug = (db.prepare("SELECT slug FROM problems WHERE id = 2").get() as { slug: string }).slug;
+    expect(slug).toBe("kept-slug");
     db.close();
   });
 });
