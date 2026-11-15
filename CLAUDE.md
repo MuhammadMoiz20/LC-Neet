@@ -30,7 +30,7 @@ reports them.
 | `TURSO_DATABASE_URL` | `libsql://lc-neet-moiz20.aws-us-east-1.turso.io` |
 | `TURSO_AUTH_TOKEN` | Turso write token |
 | `OPENROUTER_API_KEY` | LLM access |
-| `OPENROUTER_MODEL` | Optional; defaults to `~deepseek/deepseek-v4-flash-latest` |
+| `OPENROUTER_MODEL` | Optional; defaults to `~deepseek/deepseek-flash-latest` |
 | `OPENROUTER_REASONING_EFFORT` | Optional; defaults to `low`. How hard the model thinks before answering (`none`, `low`, `high`, `max`). The models default to `high`, which made analysis calls take minutes |
 
 Env var changes only take effect on the **next deploy**.
@@ -40,7 +40,7 @@ Env var changes only take effect on the **next deploy**.
 `lib/llm/openrouter.ts` is a small OpenAI-compatible client (plain `fetch`)
 providing `streamChat()` (SSE + a bounded tool-call loop, used by the coach) and
 `completeChat()` (used by the analysis pipeline). The default model id
-`~deepseek/deepseek-v4-flash-latest` genuinely starts with `~` — that is
+`~deepseek/deepseek-flash-latest` genuinely starts with `~` — that is
 OpenRouter's id, not a typo.
 
 ## Scripts
