@@ -21,7 +21,7 @@ import { createUser } from "@/lib/auth/users";
 import { seedProblems } from "@/lib/seed";
 import { getReviewState, upsertReview } from "@/lib/sr/repo";
 import { auth } from "@/auth";
-import { markRevisit, moveCard } from "./actions";
+import { markRevisit, markStarted, moveCard } from "./actions";
 
 const DAY = 86_400_000;
 let userId: number;
@@ -91,29 +91,57 @@ describe("moveCard", () => {
         "INSERT INTO attempts (user_id, problem_id, code, status, runtime_ms, mode, created_at) VALUES (?, ?, 'x', 'passed', 1, 'run', strftime('%s','now') - ?)",
       )
       .run(userId, problemId, daysAgo * 86400);
+  const column = async (problemId: number) => {
+    const { getBoard } = await import("@/lib/lifecycle/board");
+    return getBoard(getDb(), userId, Date.now()).find((c) =>
+      c.cards.some((card) => card.problemId === problemId),
+    )!.id;
+  };
 
-  test("refuses the fact-based columns and untouched problems, changing nothing", async () => {
-    expect(await moveCard(1, "attempting")).toMatchObject({ ok: false });
-    expect(await moveCard(1, "revisit")).toMatchObject({ ok: false }); // never attempted
-    expect(await moveCard(1, "solved")).toMatchObject({ ok: false }); // never accepted
-    expect(getReviewState(getDb(), userId, 1)).toBeNull();
+  test("opening a problem starts it, and it can be put back", async () => {
+    expect(await column(1)).toBe("todo");
+    await markStarted(1);
+    await markStarted(1); // opening again changes nothing
+    expect(await column(1)).toBe("attempting");
+    await moveCard(1, "todo");
+    expect(await column(1)).toBe("todo");
   });
 
-  test("Revisit -> Solved undoes a flag; Mastered has to be earned on three days", async () => {
+  test("a card can be dropped in every column, whatever its history", async () => {
+    // problem 1: never opened. problem 2: accepted once.
+    pass(2, 0);
+    for (const to of ["mastered", "solved", "revisit", "attempting", "todo"] as const) {
+      await moveCard(1, to);
+      expect(await column(1)).toBe(to);
+      await moveCard(2, to);
+      expect(await column(2)).toBe(to);
+    }
+  });
+
+  test("a move that fits the history changes the schedule instead of pinning", async () => {
     pass(1, 0);
     await markRevisit(1);
-    expect(await moveCard(1, "solved")).toEqual({ ok: true });
+    await moveCard(1, "solved"); // undo the flag
     expect(getReviewState(getDb(), userId, 1)!.interval_days).toBe(6);
-
-    const refused = await moveCard(1, "mastered");
-    expect(refused).toMatchObject({ ok: false });
-    expect(getReviewState(getDb(), userId, 1)!.interval_days).toBe(6);
-
     pass(1, 8);
     pass(1, 20);
-    expect(await moveCard(1, "mastered")).toEqual({ ok: true });
-    const state = getReviewState(getDb(), userId, 1)!;
-    expect(state.interval_days).toBe(21);
-    expect(state.due_at).toBeGreaterThan(Date.now() + 20 * DAY);
+    await moveCard(1, "mastered"); // earned on three days
+    expect(getReviewState(getDb(), userId, 1)!.interval_days).toBe(21);
+    const { listMarks } = await import("@/lib/lifecycle/starts");
+    expect(listMarks(getDb(), userId).get(1)?.pinned ?? null).toBeNull();
+  });
+
+  test("a pin lasts until the next submission, and opening lifts a Not started pin", async () => {
+    pass(1, 0);
+    await moveCard(1, "todo"); // contradicts the accepted pass: pinned
+    expect(await column(1)).toBe("todo");
+    await markStarted(1); // opening it is starting it
+    expect(await column(1)).toBe("solved");
+
+    await moveCard(3, "mastered"); // never touched: pinned
+    expect(await column(3)).toBe("mastered");
+    const { submitAttempt } = await import("@/app/(app)/problem/[slug]/actions");
+    await submitAttempt({ problemId: 3, code: "x", status: "failed", runtimeMs: 1, mode: "submit" });
+    expect(await column(3)).toBe("attempting");
   });
 });

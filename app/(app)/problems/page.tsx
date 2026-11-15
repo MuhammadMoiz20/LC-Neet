@@ -5,6 +5,7 @@ import {
   getSolvedProblemIds,
 } from "@/lib/stats/repo";
 import { requireUserId } from "@/lib/auth/current-user";
+import { listMarks } from "@/lib/lifecycle/starts";
 import {
   getPatternName,
   topicToPatternId,
@@ -22,7 +23,7 @@ function lastAttemptLabel(
 ): string {
   if (status === "solved") return "· accepted";
   if (status === "attempted") {
-    if (!rawStatus) return "· attempted";
+    if (!rawStatus) return "· opened";
     return rawStatus === "passed" ? "· accepted" : `· ${rawStatus}`;
   }
   return "—";
@@ -34,13 +35,14 @@ export default async function ProblemsPage() {
   const problems = listProblems(db);
   const solved = getSolvedProblemIds(db, userId);
   const latest = getLatestAttemptByProblem(db, userId);
+  const marks = listMarks(db, userId);
 
   const rows: ProblemRow[] = problems.map((p) => {
     const isSolved = solved.has(p.id);
     const last = latest.get(p.id);
     const status: ProblemRow["status"] = isSolved
       ? "solved"
-      : last
+      : last || marks.get(p.id)?.started
         ? "attempted"
         : "todo";
     const patternId = topicToPatternId(p.topic);

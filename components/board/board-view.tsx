@@ -3,21 +3,24 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Button, Pill, toast } from "@/components/ui";
+import { Pill, toast } from "@/components/ui";
 import { moveCard } from "@/app/(app)/board/actions";
 import type { BoardCard, BoardColumn } from "@/lib/lifecycle/board";
-import { moveRefusal, type Stage } from "@/lib/lifecycle/stage";
+import { STAGES, type Stage } from "@/lib/lifecycle/stage";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const STAGE_NAMES = STAGES.map((s) => [s.id, s.name] as const);
 
 function dueLabel(dueAt: number, nowMs: number): string {
   if (dueAt <= nowMs) return "due now";
   return `due in ${Math.ceil((dueAt - nowMs) / DAY_MS)}d`;
 }
 
-const MOVED: Partial<Record<Stage, string>> = {
-  revisit: "Marked. It'll be back in your queue tomorrow.",
-  solved: "Moved to Solved. Next review in 6 days.",
+const MOVED: Record<Stage, string> = {
+  todo: "Moved to Not started.",
+  attempting: "Moved to Attempting.",
+  revisit: "Moved to Revisit.",
+  solved: "Moved to Solved.",
   mastered: "Moved to Mastered.",
 };
 
@@ -36,20 +39,11 @@ export function BoardView({
 
   function move(card: BoardCard, to: Stage) {
     if (to === card.stage) return;
-    const refusal = moveRefusal(card, to);
-    if (refusal) {
-      toast(refusal, { kind: "info" });
-      return;
-    }
     startTransition(async () => {
       try {
-        const res = await moveCard(card.problemId, to);
-        if (!res.ok) {
-          toast(res.reason, { kind: "info" });
-          return;
-        }
+        await moveCard(card.problemId, to);
         router.refresh();
-        toast(MOVED[to] ?? "Moved.", { kind: "success" });
+        toast(MOVED[to], { kind: "success" });
       } catch {
         toast("Couldn't move it. Try again.", { kind: "error" });
       }
@@ -82,8 +76,8 @@ export function BoardView({
           Board
         </h1>
         <span className="muted" style={{ fontSize: 12, marginLeft: 8 }}>
-          Drag a card between Revisit, Solved and Mastered to change when it
-          comes back. The first two columns follow your submissions.
+          Opening a problem moves it to Attempting. Drag any card to any
+          column; it stays there until you submit that problem again.
         </span>
       </div>
 
@@ -102,12 +96,9 @@ export function BoardView({
         }}
       >
         {columns.map((col) => {
-          // While a card is in the air, show where it may land.
-          const allowed =
-            dragging != null &&
-            col.id !== dragging.stage &&
-            moveRefusal(dragging, col.id) === null;
-          const isOver = over === col.id && dragging != null;
+          // While a card is in the air, mark the column it would land in.
+          const target =
+            dragging != null && over === col.id && col.id !== dragging.stage;
           return (
             <section
               key={col.id}
@@ -116,7 +107,7 @@ export function BoardView({
               onDragOver={(e) => {
                 if (!dragging) return;
                 e.preventDefault();
-                e.dataTransfer.dropEffect = allowed ? "move" : "none";
+                e.dataTransfer.dropEffect = "move";
                 if (over !== col.id) setOver(col.id);
               }}
               onDragLeave={(e) => {
@@ -135,12 +126,10 @@ export function BoardView({
                 // Sits between the page and the cards in both themes.
                 background: "color-mix(in srgb, var(--bg-2) 60%, var(--bg))",
                 border: "1px solid",
-                borderColor: allowed ? "var(--accent-ring)" : "var(--border)",
-                boxShadow:
-                  allowed && isOver ? "0 0 0 3px var(--accent-ring)" : "none",
+                borderColor: target ? "var(--accent)" : "var(--border)",
+                boxShadow: target ? "0 0 0 3px var(--accent-ring)" : "none",
                 borderRadius: 12,
-                opacity: dragging && !allowed && col.id !== dragging.stage ? 0.55 : 1,
-                transition: "opacity 120ms, border-color 120ms, box-shadow 120ms",
+                transition: "border-color 120ms, box-shadow 120ms",
               }}
             >
               <div
@@ -174,7 +163,7 @@ export function BoardView({
                   className="muted"
                   style={{ margin: 0, padding: 12, fontSize: 12, flex: 1 }}
                 >
-                  {allowed ? "Drop here." : "Nothing here yet."}
+                  {target ? "Drop here." : "Nothing here yet."}
                 </p>
               ) : (
                 <ul
@@ -199,13 +188,6 @@ export function BoardView({
                       onMove={move}
                       onDragStart={() => setDragging(card)}
                       onDragEnd={() => {
-                        // A refused column shows the "no drop" cursor, so the
-                        // browser never fires drop there. Say why here instead.
-                        const refusal =
-                          over && over !== card.stage
-                            ? moveRefusal(card, over)
-                            : null;
-                        if (refusal) toast(refusal, { kind: "info" });
                         setDragging(null);
                         setOver(null);
                       }}
@@ -238,21 +220,13 @@ function Card({
   onDragStart: () => void;
   onDragEnd: () => void;
 }) {
-  // Not-started cards have nowhere to go, so they don't pretend to be draggable.
-  const movable = card.attempted;
-  // The same moves without a mouse: flag it, or take a flag back.
-  const button: { to: Stage; label: string } | null =
-    card.stage === "revisit"
-      ? card.solved
-        ? { to: "solved", label: "Back to Solved" }
-        : null
-      : movable
-        ? { to: "revisit", label: "Revisit soon" }
-        : null;
+  // Every move without a mouse (and on touch screens, where dragging
+  // doesn't work): pick the column from a menu.
+  const others = STAGE_NAMES.filter(([id]) => id !== card.stage);
   return (
     <li
       className="col"
-      draggable={movable && !pending}
+      draggable={!pending}
       onDragStart={(e) => {
         e.dataTransfer.effectAllowed = "move";
         e.dataTransfer.setData("text/plain", card.title);
@@ -266,7 +240,7 @@ function Card({
         border: "1px solid var(--border)",
         borderRadius: 8,
         fontSize: 13,
-        cursor: movable ? "grab" : "default",
+        cursor: "grab",
         opacity: lifted ? 0.4 : 1,
       }}
     >
@@ -299,17 +273,23 @@ function Card({
           {dueLabel(card.dueAt, nowMs)}
         </span>
       )}
-      {button && (
-        <Button
-          size="sm"
-          disabled={pending}
-          aria-label={`${button.label}: ${card.title}`}
-          onClick={() => onMove(card, button.to)}
-          style={{ alignSelf: "flex-start", opacity: pending ? 0.6 : 1 }}
-        >
-          {button.label}
-        </Button>
-      )}
+      <select
+        className="input"
+        aria-label={`Move ${card.title} to another column`}
+        disabled={pending}
+        value=""
+        onChange={(e) => {
+          if (e.target.value) onMove(card, e.target.value as Stage);
+        }}
+        style={{ alignSelf: "flex-start", height: 26, fontSize: 12, padding: "0 6px" }}
+      >
+        <option value="">Move to…</option>
+        {others.map(([id, name]) => (
+          <option key={id} value={id}>
+            {name}
+          </option>
+        ))}
+      </select>
     </li>
   );
 }

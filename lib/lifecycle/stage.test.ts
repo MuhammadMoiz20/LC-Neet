@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { MASTERY_INTERVAL_DAYS, STAGES, problemStage, moveRefusal } from "./stage";
+import { MASTERY_INTERVAL_DAYS, STAGES, problemStage, fitsHistory } from "./stage";
 
 const NOW = 1_800_000_000_000;
 const DAY = 86_400_000;
@@ -43,20 +43,28 @@ describe("problemStage", () => {
   });
 });
 
-describe("moveRefusal", () => {
-  const facts = { attempted: true, solved: true, passDays: 1 };
-  test("never allows a drop on the columns that follow submissions", () => {
-    expect(moveRefusal(facts, "todo")).toBeTruthy();
-    expect(moveRefusal(facts, "attempting")).toBeTruthy();
+describe("fitsHistory", () => {
+  const opened = { attempted: true, submitted: false, solved: false, passDays: 0 };
+  const failed = { attempted: true, submitted: true, solved: false, passDays: 0 };
+  const solved = { attempted: true, submitted: true, solved: true, passDays: 1 };
+  const untouched = { attempted: false, submitted: false, solved: false, passDays: 0 };
+
+  test("Not started fits only a problem with no submissions", () => {
+    expect(fitsHistory(opened, "todo")).toBe(true);
+    expect(fitsHistory(failed, "todo")).toBe(false);
   });
-  test("Revisit needs an attempt; Solved needs an accepted pass", () => {
-    expect(moveRefusal({ attempted: false, solved: false, passDays: 0 }, "revisit")).toBeTruthy();
-    expect(moveRefusal({ attempted: true, solved: false, passDays: 0 }, "revisit")).toBeNull();
-    expect(moveRefusal({ attempted: true, solved: false, passDays: 0 }, "solved")).toBeTruthy();
-    expect(moveRefusal(facts, "solved")).toBeNull();
+  test("Attempting fits anything not yet accepted", () => {
+    expect(fitsHistory(untouched, "attempting")).toBe(true);
+    expect(fitsHistory(solved, "attempting")).toBe(false);
   });
-  test("Mastered has to be earned on three separate days", () => {
-    expect(moveRefusal(facts, "mastered")).toMatch(/1 so far/);
-    expect(moveRefusal({ ...facts, passDays: 3 }, "mastered")).toBeNull();
+  test("Revisit fits a started problem; Solved fits an accepted one", () => {
+    expect(fitsHistory(untouched, "revisit")).toBe(false);
+    expect(fitsHistory(opened, "revisit")).toBe(true);
+    expect(fitsHistory(failed, "solved")).toBe(false);
+    expect(fitsHistory(solved, "solved")).toBe(true);
+  });
+  test("Mastered fits only passes on three separate days", () => {
+    expect(fitsHistory(solved, "mastered")).toBe(false);
+    expect(fitsHistory({ ...solved, passDays: 3 }, "mastered")).toBe(true);
   });
 });

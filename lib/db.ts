@@ -79,6 +79,13 @@ CREATE TABLE IF NOT EXISTS review_queue (
   UNIQUE(user_id, problem_id)
 );
 CREATE INDEX IF NOT EXISTS review_due ON review_queue(user_id, due_at);
+CREATE TABLE IF NOT EXISTS problem_marks (
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  problem_id INTEGER NOT NULL REFERENCES problems(id),
+  started INTEGER NOT NULL DEFAULT 0,
+  pinned_stage TEXT CHECK(pinned_stage IN ('todo','attempting','revisit','solved','mastered')),
+  PRIMARY KEY (user_id, problem_id)
+);
 CREATE TABLE IF NOT EXISTS daily (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users(id),

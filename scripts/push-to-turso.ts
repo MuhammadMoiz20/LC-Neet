@@ -20,6 +20,7 @@ const TABLES = [
   "mistakes",
   "pattern_counters",
   "review_queue",
+  "problem_marks",
   "daily",
 ] as const;
 

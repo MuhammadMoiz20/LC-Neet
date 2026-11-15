@@ -1,8 +1,8 @@
 export type Stage = "todo" | "attempting" | "revisit" | "solved" | "mastered";
 
 export const STAGES: readonly { id: Stage; name: string; blurb: string }[] = [
-  { id: "todo", name: "Not started", blurb: "You haven't tried it yet." },
-  { id: "attempting", name: "Attempting", blurb: "Tried, not accepted yet." },
+  { id: "todo", name: "Not started", blurb: "You haven't opened it yet." },
+  { id: "attempting", name: "Attempting", blurb: "Opened or tried, not accepted yet." },
   { id: "revisit", name: "Revisit", blurb: "Marked by you, or due for review now." },
   { id: "solved", name: "Solved", blurb: "Accepted. The next review is scheduled." },
   { id: "mastered", name: "Mastered", blurb: "Held up across reviews: the next one is 3+ weeks out." },
@@ -33,21 +33,17 @@ export function problemStage(
 }
 
 /**
- * Dragging a card. Not started and Attempting are facts about submissions, so
- * nothing can be dropped there; Revisit, Solved and Mastered are positions in
- * the review schedule, so a card can move between them when the facts allow.
- * Returns why a move is refused, or null when it is allowed.
+ * Does this column agree with the problem's history? The board lets a card go
+ * anywhere; when the answer here is no, the move is kept as a pin instead of
+ * being expressed through the "opened" record or the review schedule.
  */
-export function moveRefusal(
-  p: { attempted: boolean; solved: boolean; passDays: number },
+export function fitsHistory(
+  p: { attempted: boolean; submitted: boolean; solved: boolean; passDays: number },
   to: Stage,
-): string | null {
-  if (to === "todo" || to === "attempting")
-    return "Not started and Attempting follow your submissions.";
-  if (to === "revisit")
-    return p.attempted ? null : "Try it first. Revisit is for problems you've attempted.";
-  if (!p.solved) return "That needs an accepted submission first.";
-  if (to === "mastered" && p.passDays < MASTERY_MIN_PASS_DAYS)
-    return `Mastered is earned: pass it on ${MASTERY_MIN_PASS_DAYS} separate days (${p.passDays} so far).`;
-  return null;
+): boolean {
+  if (to === "todo") return !p.submitted;
+  if (to === "attempting") return !p.solved;
+  if (to === "revisit") return p.attempted;
+  if (to === "solved") return p.solved;
+  return p.solved && p.passDays >= MASTERY_MIN_PASS_DAYS;
 }

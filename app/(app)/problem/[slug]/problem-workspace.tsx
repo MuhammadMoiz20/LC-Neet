@@ -6,7 +6,7 @@ import { CodeEditor } from "@/components/code-editor";
 import { usePyodideRunner } from "@/lib/pyodide/use-pyodide-runner";
 import type { CustomResult, RunResult } from "@/lib/pyodide/worker-protocol";
 import { submitAttempt, getMyAttempts } from "./actions";
-import { markRevisit } from "@/app/(app)/board/actions";
+import { markRevisit, markStarted } from "@/app/(app)/board/actions";
 import { SubmissionsTab } from "@/components/workspace/submissions-tab";
 import { CoachPanel } from "@/components/coach-panel";
 import { Icon, IconButton, toast } from "@/components/ui";
@@ -59,6 +59,11 @@ export function ProblemWorkspace({
   interviewMode?: boolean;
   interviewDurationMin?: number;
 }) {
+  // Opening a problem is what moves it from Not started to Attempting.
+  useEffect(() => {
+    markStarted(problem.id).catch(() => {});
+  }, [problem.id]);
+
   // The tab bar says "autosaved", so make it true: keep the draft in this
   // browser and restore it on return. Interview rounds always start clean.
   // `code` only reaches client-only components, so reading storage in the

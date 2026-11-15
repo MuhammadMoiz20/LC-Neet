@@ -11,6 +11,7 @@ import {
 import { upsertReview, getReviewState } from "@/lib/sr/repo";
 import { nextReview, gradeFromAttempt } from "@/lib/sr/sm2";
 import { getDaily, markDailyComplete } from "@/lib/daily/repo";
+import { setPin } from "@/lib/lifecycle/starts";
 import { endOfLocalDay, localDate, userTzOffsetSec } from "@/lib/time/local-day";
 
 export async function submitAttempt(input: {
@@ -32,6 +33,10 @@ export async function submitAttempt(input: {
     runtime_ms: input.runtimeMs,
     mode: input.mode,
   });
+
+  // The board lets a card be pinned anywhere; a new submission lifts the pin
+  // so the card follows what actually happened.
+  setPin(db, userId, input.problemId, null);
 
   if (input.status === "passed") {
     // Counts only — the rows themselves carry full code and chat text.
