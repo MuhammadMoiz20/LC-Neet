@@ -28,14 +28,29 @@ describe("runOne", () => {
     expect(firstCallArg.system).toContain("PEP 8");
   });
 
-  test("gives each call a time limit and reports a timeout as a failed section", async () => {
-    vi.mocked(completeChat).mockRejectedValue(
-      Object.assign(new Error("The operation was aborted due to timeout"), { name: "TimeoutError" }),
-    );
+  const timeout = () =>
+    Object.assign(new Error("The operation was aborted due to timeout"), { name: "TimeoutError" });
+
+  test("a call that hangs is sent again, and the retry's answer is used", async () => {
+    vi.mocked(completeChat).mockRejectedValueOnce(timeout()).mockResolvedValueOnce("Grade: 8");
     const result = await runOne({ kind: "grade", ...baseInput });
+    expect(vi.mocked(completeChat)).toHaveBeenCalledTimes(2);
     expect(vi.mocked(completeChat).mock.calls[0][0].signal).toBeInstanceOf(AbortSignal);
-    expect(result.status).toBe("error");
-    expect(result.content_md).toContain("took longer than 90s");
+    expect(result).toEqual({ kind: "grade", content_md: "Grade: 8", status: "done" });
+  });
+
+  test("three hung tries become a failed section; other errors are not retried", async () => {
+    vi.mocked(completeChat).mockRejectedValue(timeout());
+    const hung = await runOne({ kind: "grade", ...baseInput });
+    expect(vi.mocked(completeChat)).toHaveBeenCalledTimes(3);
+    expect(hung.status).toBe("error");
+    expect(hung.content_md).toContain("didn't answer in 3 tries of 30s");
+
+    vi.mocked(completeChat).mockReset();
+    vi.mocked(completeChat).mockRejectedValue(new Error("OpenRouter 401: bad key"));
+    const refused = await runOne({ kind: "grade", ...baseInput });
+    expect(vi.mocked(completeChat)).toHaveBeenCalledTimes(1);
+    expect(refused.content_md).toContain("401");
   });
 
   test("returns done with content_md from a single assistant text block", async () => {
