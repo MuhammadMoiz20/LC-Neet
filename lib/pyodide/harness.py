@@ -186,9 +186,26 @@ def _canonical_unordered(value):
     return None
 
 
-def _equals_allowing_unordered(actual, expected):
+# Methods whose answer is order-free at every level (LeetCode "any order"), so
+# inner lists are sorted too. Everywhere else inner order is significant
+# (permutations, [x, y] points, intervals) and only the outer list is free.
+_FULLY_UNORDERED = {
+    "groupAnagrams", "threeSum", "subsets", "subsetsWithDup",
+    "combinationSum", "combinationSum2", "topKFrequent", "twoSum",
+}
+
+
+def _sort_deep(value):
+    if isinstance(value, (list, tuple)):
+        return sorted((_sort_deep(v) for v in value), key=repr)
+    return value
+
+
+def _equals_allowing_unordered(actual, expected, method_name=None):
     if actual == expected:
         return True
+    if method_name in _FULLY_UNORDERED:
+        return _sort_deep(actual) == _sort_deep(expected)
     a = _canonical_unordered(actual)
     e = _canonical_unordered(expected)
     if a is None or e is None:
@@ -281,7 +298,7 @@ def _run_one(solution, method_name, case):
             raw_actual, method, kwargs, raw_input, list_key, tree_key, case["expected"]
         )
         elapsed_ms = int((time.perf_counter() - start) * 1000)
-        passed = _equals_allowing_unordered(actual, case["expected"])
+        passed = _equals_allowing_unordered(actual, case["expected"], method_name)
         return {
             "passed": passed,
             "actual": actual,
