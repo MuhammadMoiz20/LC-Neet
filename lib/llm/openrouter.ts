@@ -52,6 +52,8 @@ export type ChatOptions = {
   /** Max assistant turns, including tool-call round trips. */
   maxTurns?: number;
   signal?: AbortSignal;
+  /** Overrides REASONING_EFFORT for this call ("none" turns thinking off). */
+  reasoningEffort?: string;
 };
 
 function apiKey(): string {
@@ -242,7 +244,7 @@ export async function completeChat(
       model: opts.model ?? DEFAULT_MODEL,
       messages: [{ role: "system", content: opts.system }, ...opts.messages],
       stream: false,
-      reasoning: { effort: REASONING_EFFORT },
+      reasoning: { effort: opts.reasoningEffort ?? REASONING_EFFORT },
     },
     opts.signal,
   );

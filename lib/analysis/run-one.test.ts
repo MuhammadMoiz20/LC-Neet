@@ -53,6 +53,12 @@ describe("runOne", () => {
     expect(refused.content_md).toContain("401");
   });
 
+  test("analysis calls turn the model's thinking off", async () => {
+    vi.mocked(completeChat).mockResolvedValue("Grade: 8");
+    await runOne({ kind: "grade", ...baseInput });
+    expect(vi.mocked(completeChat).mock.calls[0][0].reasoningEffort).toBe("none");
+  });
+
   test("returns done with content_md from a single assistant text block", async () => {
     vi.mocked(completeChat).mockResolvedValue("hello world");
     const result = await runOne({ kind: "quality", ...baseInput });

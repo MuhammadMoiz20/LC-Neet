@@ -18,11 +18,15 @@ export type RunOneResult = {
   status: AnalysisStatus;
 };
 
-// OpenRouter spreads calls over many providers, and now and then one of them
-// accepts a call and never answers. A call that is silent for this long is
-// abandoned and sent again (which usually lands on a different provider).
-// Healthy calls take 2-12s. Without a limit, one hung call held the whole run
-// until the platform killed it at 300s, leaving its rows pending forever.
+// Analysis sections are short, structured verdicts, so the model answers
+// without thinking first. With thinking on (even at "low" effort), 80-90% of
+// output tokens were hidden reasoning, and the grade and mistake prompts
+// reasoned past every time limit (production attempts 184-188).
+const REASONING_EFFORT = process.env.OPENROUTER_ANALYSIS_REASONING_EFFORT ?? "none";
+
+// A call that hasn't answered by now is abandoned and sent again, which
+// usually lands on a different provider. Without a limit, one stuck call held
+// the whole run until the platform killed it at 300s, leaving rows pending.
 const TRY_TIMEOUT_MS = 30_000;
 const TRIES = 3;
 
@@ -33,6 +37,7 @@ async function completeWithRetry(kind: AnalysisKind, system: string, userPrompt:
         system,
         messages: [{ role: "user", content: userPrompt }],
         signal: AbortSignal.timeout(TRY_TIMEOUT_MS),
+        reasoningEffort: REASONING_EFFORT,
       });
     } catch (err) {
       const timedOut = err instanceof Error && err.name === "TimeoutError";

@@ -15,7 +15,8 @@
     "import:nc150": "tsx scripts/import-neetcode-150.ts",
     "e2e": "playwright test",
     "push:turso": "tsx scripts/push-to-turso.ts",
-    "set-password": "tsx scripts/set-password.ts"
+    "set-password": "tsx scripts/set-password.ts",
+    "check:llm": "tsx scripts/check-analysis.ts"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",

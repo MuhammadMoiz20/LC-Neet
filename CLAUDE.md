@@ -31,7 +31,8 @@ reports them.
 | `TURSO_AUTH_TOKEN` | Turso write token |
 | `OPENROUTER_API_KEY` | LLM access |
 | `OPENROUTER_MODEL` | Optional; defaults to `~deepseek/deepseek-flash-latest` |
-| `OPENROUTER_REASONING_EFFORT` | Optional; defaults to `low`. How hard the model thinks before answering (`none`, `low`, `high`, `max`). The models default to `high`, which made analysis calls take minutes |
+| `OPENROUTER_REASONING_EFFORT` | Optional; defaults to `low`. Coach only: how hard the model thinks before answering (`none`, `low`, `high`, `max`) |
+| `OPENROUTER_ANALYSIS_REASONING_EFFORT` | Optional; defaults to `none`. Analysis sections. With thinking on, the grade and mistake prompts reasoned past every time limit |
 
 Env var changes only take effect on the **next deploy**.
 
@@ -44,6 +45,8 @@ providing `streamChat()` (SSE + a bounded tool-call loop, used by the coach) and
 OpenRouter's id, not a typo.
 
 ## Scripts
+
+- `npm run check:llm` — run all analysis sections once against the real model and print time, hidden-reasoning tokens and the first line of each answer. Needs `OPENROUTER_API_KEY` (and optionally `OPENROUTER_MODEL`) in the shell or `.env.local`. Exits non-zero if any section fails or runs longer than 20s. Run it before changing the model or reasoning settings.
 
 - `npm run push:turso` — copy a local SQLite file into Turso (`LOCAL_DB_PATH` to
   pick the source; defaults to `data/app.db`). Safe to re-run; uses INSERT OR IGNORE.
