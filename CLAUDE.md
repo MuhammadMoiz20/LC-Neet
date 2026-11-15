@@ -31,6 +31,7 @@ reports them.
 | `TURSO_AUTH_TOKEN` | Turso write token |
 | `OPENROUTER_API_KEY` | LLM access |
 | `OPENROUTER_MODEL` | Optional; defaults to `~deepseek/deepseek-v4-flash-latest` |
+| `OPENROUTER_REASONING_EFFORT` | Optional; defaults to `low`. How hard the model thinks before answering (`none`, `low`, `high`, `max`). The models default to `high`, which made analysis calls take minutes |
 
 Env var changes only take effect on the **next deploy**.
 

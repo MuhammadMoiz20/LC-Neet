@@ -28,6 +28,16 @@ describe("runOne", () => {
     expect(firstCallArg.system).toContain("PEP 8");
   });
 
+  test("gives each call a time limit and reports a timeout as a failed section", async () => {
+    vi.mocked(completeChat).mockRejectedValue(
+      Object.assign(new Error("The operation was aborted due to timeout"), { name: "TimeoutError" }),
+    );
+    const result = await runOne({ kind: "grade", ...baseInput });
+    expect(vi.mocked(completeChat).mock.calls[0][0].signal).toBeInstanceOf(AbortSignal);
+    expect(result.status).toBe("error");
+    expect(result.content_md).toContain("took longer than 90s");
+  });
+
   test("returns done with content_md from a single assistant text block", async () => {
     vi.mocked(completeChat).mockResolvedValue("hello world");
     const result = await runOne({ kind: "quality", ...baseInput });

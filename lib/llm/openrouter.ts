@@ -12,6 +12,14 @@ const BASE_URL =
 export const DEFAULT_MODEL =
   process.env.OPENROUTER_MODEL ?? "~deepseek/deepseek-v4-flash-latest";
 
+/**
+ * How hard the model "thinks" before answering. The default models reason at
+ * "high" effort unless told otherwise, which made single analysis calls take
+ * minutes (and bill for the thinking). "low" is plenty for reviewing a short
+ * solution. Values: none | low | high | max (see the model's page).
+ */
+const REASONING_EFFORT = process.env.OPENROUTER_REASONING_EFFORT ?? "low";
+
 export type ChatRole = "system" | "user" | "assistant" | "tool";
 
 export type ChatMessageParam = {
@@ -163,6 +171,7 @@ export async function* streamChat(opts: ChatOptions): AsyncGenerator<string> {
         model: opts.model ?? DEFAULT_MODEL,
         messages,
         stream: true,
+        reasoning: { effort: REASONING_EFFORT },
         ...(tools.length ? { tools: toolSchema(tools) } : {}),
       },
       opts.signal,
@@ -227,16 +236,32 @@ export async function* streamChat(opts: ChatOptions): AsyncGenerator<string> {
 export async function completeChat(
   opts: Omit<ChatOptions, "tools" | "maxTurns">,
 ): Promise<string> {
+  const started = Date.now();
   const res = await post(
     {
       model: opts.model ?? DEFAULT_MODEL,
       messages: [{ role: "system", content: opts.system }, ...opts.messages],
       stream: false,
+      reasoning: { effort: REASONING_EFFORT },
     },
     opts.signal,
   );
   const json = (await res.json()) as {
     choices?: Array<{ message?: { content?: string | null } }>;
+    model?: string;
+    provider?: string;
+    usage?: unknown;
   };
+  // One line per call in the function logs: which provider answered, how long
+  // it took and what it cost in tokens. This is what slow runs are diagnosed from.
+  console.log(
+    JSON.stringify({
+      evt: "llm",
+      ms: Date.now() - started,
+      model: json.model,
+      provider: json.provider,
+      usage: json.usage,
+    }),
+  );
   return json.choices?.[0]?.message?.content ?? "";
 }

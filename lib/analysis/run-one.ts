@@ -18,6 +18,11 @@ export type RunOneResult = {
   status: AnalysisStatus;
 };
 
+// A call that hasn't answered by now is abandoned and shown as failed (it can
+// be rerun). Without a limit, one slow call held the whole run until the
+// platform killed it at 300s, leaving its rows pending forever.
+const CALL_TIMEOUT_MS = 90_000;
+
 export async function runOne(input: RunOneInput): Promise<RunOneResult> {
   const userPrompt = `Problem: ${input.problemTitle} (${input.problemDifficulty}, ${input.problemTopic})
 
@@ -35,6 +40,7 @@ Provide the analysis described in your system prompt.`;
     const buffer = await completeChat({
       system: analysisPrompt(input.kind),
       messages: [{ role: "user", content: userPrompt }],
+      signal: AbortSignal.timeout(CALL_TIMEOUT_MS),
     });
     if (looksLikeFullSolution(buffer)) {
       return {
@@ -55,7 +61,12 @@ Provide the analysis described in your system prompt.`;
     }
     return { kind: input.kind, content_md: content, status: "done" };
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "unknown error";
+    const msg =
+      err instanceof Error && err.name === "TimeoutError"
+        ? `the model took longer than ${CALL_TIMEOUT_MS / 1000}s`
+        : err instanceof Error
+          ? err.message
+          : "unknown error";
     return { kind: input.kind, content_md: `[error: ${msg}]`, status: "error" };
   }
 }
