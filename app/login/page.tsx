@@ -1,6 +1,7 @@
 "use client";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
+import { BrandMark } from "@/components/app-shell/brand-mark";
 
 // idle ──► submitting ──► (redirect) | error ──► submitting …
 type Phase = { name: "idle" } | { name: "submitting" } | { name: "error"; message: string };
@@ -31,7 +32,8 @@ export default function LoginPage() {
         className="glass col"
         style={{ width: "100%", maxWidth: 360, padding: 28, borderRadius: 16, gap: 12 }}
       >
-        <h1 style={{ margin: "0 0 4px", fontSize: 20, fontWeight: 600 }}>Sign in</h1>
+        <BrandMark />
+        <h1 style={{ margin: "6px 0 4px", fontSize: 20, fontWeight: 600 }}>Sign in</h1>
         <input
           className="input"
           type="email"

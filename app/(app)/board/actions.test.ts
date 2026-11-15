@@ -21,7 +21,7 @@ import { createUser } from "@/lib/auth/users";
 import { seedProblems } from "@/lib/seed";
 import { getReviewState, upsertReview } from "@/lib/sr/repo";
 import { auth } from "@/auth";
-import { markRevisit } from "./actions";
+import { markRevisit, moveCard } from "./actions";
 
 const DAY = 86_400_000;
 let userId: number;
@@ -81,5 +81,39 @@ describe("markRevisit", () => {
     vi.mocked(auth).mockResolvedValue(null as never);
     await expect(markRevisit(1)).rejects.toThrow("Unauthorized");
     expect(getReviewState(getDb(), userId, 1)).toBeNull();
+  });
+});
+
+describe("moveCard", () => {
+  const pass = (problemId: number, daysAgo: number) =>
+    getDb()
+      .prepare(
+        "INSERT INTO attempts (user_id, problem_id, code, status, runtime_ms, mode, created_at) VALUES (?, ?, 'x', 'passed', 1, 'run', strftime('%s','now') - ?)",
+      )
+      .run(userId, problemId, daysAgo * 86400);
+
+  test("refuses the fact-based columns and untouched problems, changing nothing", async () => {
+    expect(await moveCard(1, "attempting")).toMatchObject({ ok: false });
+    expect(await moveCard(1, "revisit")).toMatchObject({ ok: false }); // never attempted
+    expect(await moveCard(1, "solved")).toMatchObject({ ok: false }); // never accepted
+    expect(getReviewState(getDb(), userId, 1)).toBeNull();
+  });
+
+  test("Revisit -> Solved undoes a flag; Mastered has to be earned on three days", async () => {
+    pass(1, 0);
+    await markRevisit(1);
+    expect(await moveCard(1, "solved")).toEqual({ ok: true });
+    expect(getReviewState(getDb(), userId, 1)!.interval_days).toBe(6);
+
+    const refused = await moveCard(1, "mastered");
+    expect(refused).toMatchObject({ ok: false });
+    expect(getReviewState(getDb(), userId, 1)!.interval_days).toBe(6);
+
+    pass(1, 8);
+    pass(1, 20);
+    expect(await moveCard(1, "mastered")).toEqual({ ok: true });
+    const state = getReviewState(getDb(), userId, 1)!;
+    expect(state.interval_days).toBe(21);
+    expect(state.due_at).toBeGreaterThan(Date.now() + 20 * DAY);
   });
 });

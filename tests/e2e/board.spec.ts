@@ -25,4 +25,16 @@ test("a solved problem marked 'Revisit soon' lands in the board's Revisit column
     has: page.getByRole("heading", { name: "Revisit", exact: true }),
   });
   await expect(revisit.getByRole("link", { name: /Two Sum/ })).toBeVisible();
+
+  // Dragging it to Solved takes the mark back; Not started refuses the drop.
+  const column = (name: string) =>
+    page.locator("section", { has: page.getByRole("heading", { name, exact: true }) });
+  const card = page.locator("li", { has: page.getByRole("link", { name: "Two Sum", exact: true }) });
+  await card.dragTo(column("Solved"));
+  await expect(column("Solved").getByRole("link", { name: "Two Sum", exact: true })).toBeVisible();
+  await card.dragTo(column("Not started"));
+  await expect(
+    page.getByText("Not started and Attempting follow your submissions."),
+  ).toBeVisible();
+  await expect(column("Solved").getByRole("link", { name: "Two Sum", exact: true })).toBeVisible();
 });

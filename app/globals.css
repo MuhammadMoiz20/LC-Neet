@@ -230,6 +230,16 @@ body::before {
 [data-theme="dark"] .tok-var { color: #e4e4e7; }
 
 /* Link */
+/* Primary navigation in the top bar */
+.nav-lnk {
+  padding: 5px 10px; border-radius: 7px;
+  font-size: 13px; font-weight: 500; white-space: nowrap;
+  color: var(--text-muted); text-decoration: none;
+  transition: color 120ms, background 120ms;
+}
+.nav-lnk:hover, .nav-lnk[aria-current="page"] { color: var(--text); background: var(--bg-2); }
+.nav-lnk:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
 .lnk { color: var(--text); text-decoration: none; }
 .lnk:hover { color: var(--accent); }
 

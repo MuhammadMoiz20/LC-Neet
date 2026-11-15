@@ -4,23 +4,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon, IconButton, Kbd } from "@/components/ui";
 import { useTheme } from "@/components/theme-provider";
+import { BrandMark } from "./brand-mark";
 
-const TITLE_MAP: Record<string, string> = {
-  "": "Dashboard",
-  dashboard: "Dashboard",
-  problems: "Problems",
-  problem: "Workspace",
-  analysis: "Analysis",
-  interview: "Interview",
-  stats: "Stats",
-  board: "Board",
-};
-
-// Sections with no index page of their own: where their breadcrumb leads.
-const SECTION_HOME: Record<string, string> = {
-  problem: "/problems",
-  analysis: "/analysis/latest",
-};
+// Primary navigation. `sections` are the first URL segments that count as
+// being "in" that destination (a problem's workspace belongs to Problems).
+const NAV: { href: string; label: string; sections: string[] }[] = [
+  { href: "/", label: "Dashboard", sections: [""] },
+  { href: "/problems", label: "Problems", sections: ["problems", "problem"] },
+  { href: "/board", label: "Board", sections: ["board"] },
+  { href: "/interview", label: "Interview", sections: ["interview"] },
+];
 
 export type TopBarProps = {
   onOpenPalette: () => void;
@@ -30,9 +23,7 @@ export type TopBarProps = {
 
 export function TopBar({ onOpenPalette, onOpenCheatsheet, avatarInitials = "?" }: TopBarProps) {
   const pathname = usePathname() ?? "/";
-  const segs = pathname.split("/").filter(Boolean);
-  const route = segs[0] ?? "dashboard";
-  const title = TITLE_MAP[route] ?? "Dashboard";
+  const section = pathname.split("/").filter(Boolean)[0] ?? "";
   const { theme, toggleTheme } = useTheme();
 
   return (
@@ -51,68 +42,21 @@ export function TopBar({ onOpenPalette, onOpenCheatsheet, avatarInitials = "?" }
         gap: 12,
       }}
     >
-      <div className="row" style={{ gap: 10 }}>
-        <Link
-          href="/"
-          className="row"
-          style={{ gap: 8, textDecoration: "none", color: "var(--text)" }}
-        >
-          <span
-            style={{
-              width: 24,
-              height: 24,
-              borderRadius: 7,
-              background: "linear-gradient(135deg, var(--accent), var(--accent-active))",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow:
-                "0 1px 0 rgba(255,255,255,.3) inset, 0 2px 8px rgba(20,184,166,.35)",
-            }}
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="white"
-              strokeWidth="2.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M5 7l5 5-5 5M13 17h6" />
-            </svg>
-          </span>
-          <span
-            className="mono"
-            style={{ fontWeight: 600, letterSpacing: "-.01em", fontSize: 13 }}
-          >
-            lc-neet
-          </span>
-        </Link>
-        <div
-          className="row mono"
-          style={{ gap: 6, color: "var(--text-muted)", fontSize: 12, marginLeft: 4 }}
-        >
-          <span style={{ color: "var(--text-faint)" }}>/</span>
+      <Link href="/" aria-label="lc-neet home" style={{ textDecoration: "none" }}>
+        <BrandMark />
+      </Link>
+      <nav aria-label="Primary" className="row" style={{ gap: 2, marginLeft: 6 }}>
+        {NAV.map((item) => (
           <Link
-            className="lnk"
-            href={
-              route === "dashboard" || route === ""
-                ? "/"
-                : (SECTION_HOME[route] ?? `/${route}`)
-            }
+            key={item.href}
+            href={item.href}
+            className="nav-lnk"
+            aria-current={item.sections.includes(section) ? "page" : undefined}
           >
-            {title}
+            {item.label}
           </Link>
-          {segs.length > 1 && segs[0] === "problem" && (
-            <>
-              <span style={{ color: "var(--text-faint)" }}>/</span>
-              <span style={{ color: "var(--text)" }}>{segs[1]}</span>
-            </>
-          )}
-        </div>
-      </div>
+        ))}
+      </nav>
 
       <div style={{ flex: 1 }} />
 
@@ -127,7 +71,8 @@ export function TopBar({ onOpenPalette, onOpenCheatsheet, avatarInitials = "?" }
           borderRadius: 8,
           background: "var(--surface)",
           cursor: "text",
-          minWidth: 280,
+          minWidth: 0,
+          flex: "0 1 280px",
           border: "1px solid var(--border)",
           color: "var(--text)",
         }}
@@ -138,7 +83,11 @@ export function TopBar({ onOpenPalette, onOpenCheatsheet, avatarInitials = "?" }
             color: "var(--text-muted)",
             fontSize: 12.5,
             flex: 1,
+            minWidth: 0,
             textAlign: "left",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
           }}
         >
           Search problems, run actions…

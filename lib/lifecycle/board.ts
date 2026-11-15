@@ -13,6 +13,10 @@ export type BoardCard = {
   patternName: string;
   stage: Stage;
   dueAt: number | null;
+  /** Facts the move rules need (see moveRefusal). */
+  attempted: boolean;
+  solved: boolean;
+  passDays: number;
 };
 
 export type BoardColumn = { id: Stage; name: string; blurb: string; cards: BoardCard[] };
@@ -51,6 +55,9 @@ export function getBoard(db: Database.Database, userId: number, nowMs: number): 
       patternName: getPatternName(topicToPatternId(p.topic)),
       stage,
       dueAt: review?.due_at ?? null,
+      attempted: attempted.has(p.id),
+      solved: passDays.has(p.id),
+      passDays: passDays.get(p.id) ?? 0,
     });
   }
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { MASTERY_INTERVAL_DAYS, STAGES, problemStage } from "./stage";
+import { MASTERY_INTERVAL_DAYS, STAGES, problemStage, moveRefusal } from "./stage";
 
 const NOW = 1_800_000_000_000;
 const DAY = 86_400_000;
@@ -40,5 +40,23 @@ describe("problemStage", () => {
 
   test("STAGES lists the lifecycle in order", () => {
     expect(STAGES.map((s) => s.id)).toEqual(["todo", "attempting", "revisit", "solved", "mastered"]);
+  });
+});
+
+describe("moveRefusal", () => {
+  const facts = { attempted: true, solved: true, passDays: 1 };
+  test("never allows a drop on the columns that follow submissions", () => {
+    expect(moveRefusal(facts, "todo")).toBeTruthy();
+    expect(moveRefusal(facts, "attempting")).toBeTruthy();
+  });
+  test("Revisit needs an attempt; Solved needs an accepted pass", () => {
+    expect(moveRefusal({ attempted: false, solved: false, passDays: 0 }, "revisit")).toBeTruthy();
+    expect(moveRefusal({ attempted: true, solved: false, passDays: 0 }, "revisit")).toBeNull();
+    expect(moveRefusal({ attempted: true, solved: false, passDays: 0 }, "solved")).toBeTruthy();
+    expect(moveRefusal(facts, "solved")).toBeNull();
+  });
+  test("Mastered has to be earned on three separate days", () => {
+    expect(moveRefusal(facts, "mastered")).toMatch(/1 so far/);
+    expect(moveRefusal({ ...facts, passDays: 3 }, "mastered")).toBeNull();
   });
 });

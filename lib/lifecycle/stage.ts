@@ -31,3 +31,23 @@ export function problemStage(
   if (r && r.interval_days >= MASTERY_INTERVAL_DAYS) return "mastered";
   return "solved";
 }
+
+/**
+ * Dragging a card. Not started and Attempting are facts about submissions, so
+ * nothing can be dropped there; Revisit, Solved and Mastered are positions in
+ * the review schedule, so a card can move between them when the facts allow.
+ * Returns why a move is refused, or null when it is allowed.
+ */
+export function moveRefusal(
+  p: { attempted: boolean; solved: boolean; passDays: number },
+  to: Stage,
+): string | null {
+  if (to === "todo" || to === "attempting")
+    return "Not started and Attempting follow your submissions.";
+  if (to === "revisit")
+    return p.attempted ? null : "Try it first. Revisit is for problems you've attempted.";
+  if (!p.solved) return "That needs an accepted submission first.";
+  if (to === "mastered" && p.passDays < MASTERY_MIN_PASS_DAYS)
+    return `Mastered is earned: pass it on ${MASTERY_MIN_PASS_DAYS} separate days (${p.passDays} so far).`;
+  return null;
+}
