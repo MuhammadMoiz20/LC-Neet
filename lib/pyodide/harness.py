@@ -166,7 +166,16 @@ _USER_NS_INJECT = {
 }
 
 
-def _canonical_unordered(value):
+# Answers where each inner list is a set (a triplet, a combination, a group of
+# anagrams), so LeetCode accepts its items in any order. Elsewhere (permutations,
+# intervals, coordinates, board rows) inner order is part of the answer.
+_INNER_UNORDERED = {
+    "threeSum", "groupAnagrams", "subsets", "subsetsWithDup",
+    "combinationSum", "combinationSum2",
+}
+
+
+def _canonical_unordered(value, inner_unordered=False):
     # Recursively canonicalize a list-of-lists / list-of-strings into a sorted
     # tuple so unordered outputs can be compared. Returns None if the value
     # isn't a shape we want to compare order-independently.
@@ -179,18 +188,19 @@ def _canonical_unordered(value):
         for v in value:
             if not all(isinstance(x, (int, float, str, bool)) or x is None for x in v):
                 return None
-            inner.append(tuple(v))
+            inner.append(tuple(sorted(v, key=repr) if inner_unordered else v))
         return tuple(sorted(inner, key=lambda t: (len(t), [repr(x) for x in t])))
     if all(isinstance(v, str) for v in value):
         return tuple(sorted(value))
     return None
 
 
-def _equals_allowing_unordered(actual, expected):
+def _equals_allowing_unordered(actual, expected, method_name=""):
     if actual == expected:
         return True
-    a = _canonical_unordered(actual)
-    e = _canonical_unordered(expected)
+    loose = method_name in _INNER_UNORDERED
+    a = _canonical_unordered(actual, loose)
+    e = _canonical_unordered(expected, loose)
     if a is None or e is None:
         return False
     return a == e
@@ -281,7 +291,7 @@ def _run_one(solution, method_name, case):
             raw_actual, method, kwargs, raw_input, list_key, tree_key, case["expected"]
         )
         elapsed_ms = int((time.perf_counter() - start) * 1000)
-        passed = _equals_allowing_unordered(actual, case["expected"])
+        passed = _equals_allowing_unordered(actual, case["expected"], method_name)
         return {
             "passed": passed,
             "actual": actual,
